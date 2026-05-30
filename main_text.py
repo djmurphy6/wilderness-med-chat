@@ -60,6 +60,11 @@ def main():
             console.print("[dim]Goodbye.[/dim]")
             break
 
+        if user_input.lower() in ("new", "reset", "new patient"):
+            history = []
+            console.print("[dim]Assessment cleared. Ready for new patient.[/dim]")
+            continue
+
         # Retrieve relevant context from ChromaDB
         context_chunks = rag_engine.retrieve(user_input)
 
@@ -82,11 +87,13 @@ def main():
             console.print(f"\n[bold red]Error communicating with Ollama:[/bold red] {e}")
             continue
 
-        # Keep a sliding window of the last 6 turns (3 exchanges) in history
+        # Keep a sliding window of the last 20 turns (10 exchanges).
+        # PAS conversations run longer than simple Q&A — we need enough
+        # history for the model to track what it has and hasn't assessed yet.
         history.append({"role": "user", "content": user_input})
         history.append({"role": "assistant", "content": full_response})
-        if len(history) > 6:
-            history = history[-6:]
+        if len(history) > 20:
+            history = history[-20:]
 
 
 if __name__ == "__main__":
