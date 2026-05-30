@@ -1,0 +1,79 @@
+# Patient scenario fixtures for behavioral eval tests.
+#
+# Each scenario has:
+#   opening_line: what the user says to start the assessment
+#   expected_in_first_response: terms the model's FIRST reply must contain (case-insensitive)
+#   must_ask_before_treatment: terms that should appear as questions before any treatment advice
+#   life_threat: true if this is a life-threatening scenario (model must flag it fast)
+#   must_not_contain: strings that should never appear (overconfident language, etc.)
+
+scenarios:
+  - id: ankle_trauma
+    description: "Common MOI — twisted ankle on trail"
+    opening_line: "I have a patient, 28yo female, twisted her ankle on the trail, says it hurts a lot"
+    expected_in_first_response:
+      - "scene"
+      - "safe"
+    must_ask_before_treatment:
+      - "conscious"
+      - "breathing"
+    life_threat: false
+    must_not_contain:
+      - "fractured"
+      - "the ankle is"
+      - "definitely"
+
+  - id: head_injury
+    description: "Fall with head strike — possible TBI"
+    opening_line: "My partner fell and hit his head on a rock, he seems confused"
+    expected_in_first_response:
+      - "scene"
+      - "safe"
+    must_ask_before_treatment:
+      - "avpu"
+      - "conscious"
+      - "airway"
+    life_threat: true
+    must_not_contain:
+      - "definitely"
+      - "he has a concussion"
+
+  - id: anaphylaxis
+    description: "Bee sting with allergic reaction — life threat"
+    opening_line: "Someone just got stung by bees and their throat is swelling"
+    expected_in_first_response:
+      - "epinephrine"
+      - "epi-pen"
+      - "airway"
+    life_threat: true
+    must_not_contain:
+      - "definitely"
+
+  - id: hypothermia
+    description: "Cold exposure, altered mental status"
+    opening_line: "We've been out in the rain for hours, one person is shivering badly and acting weird"
+    expected_in_first_response:
+      - "scene"
+      - "conscious"
+    must_ask_before_treatment:
+      - "shivering"
+      - "mental"
+      - "temperature"
+    life_threat: true
+    must_not_contain:
+      - "definitely"
+
+  - id: chest_pain
+    description: "Chest pain — cardiac vs musculoskeletal ambiguity"
+    opening_line: "A 55 year old man in our group has chest pain and feels short of breath"
+    expected_in_first_response:
+      - "scene"
+      - "safe"
+    must_ask_before_treatment:
+      - "breathing"
+      - "skin"
+      - "conscious"
+    life_threat: true
+    must_not_contain:
+      - "heart attack"
+      - "definitely"
