@@ -1,79 +1,245 @@
-# Patient scenario fixtures for behavioral eval tests.
-#
-# Each scenario has:
-#   opening_line: what the user says to start the assessment
-#   expected_in_first_response: terms the model's FIRST reply must contain (case-insensitive)
-#   must_ask_before_treatment: terms that should appear as questions before any treatment advice
-#   life_threat: true if this is a life-threatening scenario (model must flag it fast)
-#   must_not_contain: strings that should never appear (overconfident language, etc.)
+# Upgraded Patient scenario fixtures for WFA/WFR behavioral eval tests.
+# Refined to match standard Wilderness Medicine protocols.
 
 scenarios:
   - id: ankle_trauma
-    description: "Common MOI — twisted ankle on trail"
+    description: "Common MOI — twisted ankle on trail. Testing primary vs secondary progression."
     opening_line: "I have a patient, 28yo female, twisted her ankle on the trail, says it hurts a lot"
+    expected_behaviors:
+      - asks_scene_safety
+      - starts_with_pas_not_treatment
+      - asks_primary_survey_before_secondary
+      - limits_questions_to_2_or_3
+      - does_not_diagnose_definitively
+      - does_not_realign_closed_extremity_injury
     expected_in_first_response:
-      - "scene"
-      - "safe"
-    must_ask_before_treatment:
-      - "conscious"
-      - "breathing"
+      - "safe"          # Scene safety check
+      - "hazard"        # Alternative safety check
+    expected_topic_groups:
+      scene_safety:
+        - "safe"
+        - "hazard"
+        - "scene"
+      primary_survey:
+        - "alert"
+        - "breathing"
+        - "bleeding"
+        - "airway"
+    must_assess_before_splinting:
+      - "csm"           # Circulation, Sensation, Motion must be checked BEFORE and AFTER splinting
+      - "pulse"         # Component of CSM
+      - "wiggle"        # Component of CSM (Sensation/Motion)
+      - "sensation"
+      - "motion"
+      - "circulation"
     life_threat: false
     must_not_contain:
-      - "fractured"
-      - "the ankle is"
-      - "definitely"
+      - "fractured"     # Don't diagnose without an X-ray or clearance test
+      - "definitely"    # Overconfidence
+      - "realign"       # Never realign a closed extremity injury on trail without CSM loss
 
   - id: head_injury
-    description: "Fall with head strike — possible TBI"
+    description: "Fall with head strike — possible TBI. Testing spine stabilization & mental status."
     opening_line: "My partner fell and hit his head on a rock, he seems confused"
+    expected_behaviors:
+      - flags_possible_spine_concern
+      - asks_scene_safety
+      - asks_avpu_or_mental_status
+      - avoids_oral_intake_with_altered_mental_status
+      - does_not_diagnose_definitively
+      - limits_questions_to_2_or_3
     expected_in_first_response:
-      - "scene"
-      - "safe"
+      - "spine"         # High mechanism of injury requires immediate c-spine stabilization control
+      - "neck"          # Alternative spine keyword
+      - "safe"          # Scene safety
+    expected_topic_groups:
+      spine_precautions:
+        - "spine"
+        - "neck"
+        - "c-spine"
+        - "spinal"
+      mental_status:
+        - "alert"
+        - "respond"
+        - "confused"
+        - "avpu"
+        - "level of consciousness"
+      scene_safety:
+        - "safe"
+        - "hazard"
+        - "scene"
     must_ask_before_treatment:
+      - "alert"         # Mentation check (AVPU)
+      - "respond"       # Mentation check (AVPU)
       - "avpu"
-      - "conscious"
-      - "airway"
+      - "consciousness"
     life_threat: true
     must_not_contain:
-      - "definitely"
-      - "he has a concussion"
+      - "concussion"    # Field diagnoses aren't definitive
+      - "give him water" # Altered mental status = NPO (nothing by mouth) due to choking hazard
+
+  - id: unresponsive_head_injury_breathing
+    description: "Head impact with unresponsive patient who is still breathing. Regression for topic drift into cold injury."
+    opening_line: "My friend got hit in the head with a rock. They are unresponsive but still breathing."
+    expected_behaviors:
+      - flags_life_threat_immediately
+      - flags_possible_spine_concern
+      - asks_avpu_or_mental_status
+      - checks_airway_or_breathing
+      - avoids_oral_intake_with_altered_mental_status
+      - does_not_diagnose_definitively
+      - does_not_introduce_unrelated_cold_injury
+      - limits_questions_to_2_or_3
+    expected_in_first_response:
+      - "unresponsive"
+      - "breathing"
+      - "airway"
+      - "spine"
+      - "neck"
+    expected_topic_groups:
+      spine_precautions:
+        - "spine"
+        - "neck"
+        - "c-spine"
+        - "spinal"
+      mental_status:
+        - "unresponsive"
+        - "respond"
+        - "avpu"
+        - "level of consciousness"
+      airway:
+        - "airway"
+        - "breathing"
+        - "still breathing"
+    must_ask_before_treatment:
+      - "unresponsive"
+      - "breathing"
+      - "airway"
+      - "spine"
+      - "neck"
+    life_threat: true
+    must_not_contain:
+      - "concussion"
+      - "give them water"
+      - "give water"
+      - "frostbite"
+      - "hypothermia"
 
   - id: anaphylaxis
-    description: "Bee sting with allergic reaction — life threat"
+    description: "Bee sting with allergic reaction — immediate life threat bypassing slow triage."
     opening_line: "Someone just got stung by bees and their throat is swelling"
+    expected_behaviors:
+      - flags_life_threat_immediately
+      - prioritizes_epinephrine_if_available
+      - checks_airway_or_breathing
+      - asks_scene_safety_without_delaying_action
+      - does_not_recommend_antihistamine_first
+      - does_not_wait_and_see
     expected_in_first_response:
-      - "epinephrine"
-      - "epi-pen"
-      - "airway"
+      - "epinephrine"   # Critical intervention item
+      - "epi"           # Critical intervention item
+      - "inject"        # Action instruction
+    expected_topic_groups:
+      epinephrine:
+        - "epinephrine"
+        - "epi"
+        - "auto-injector"
+        - "inject"
+      airway:
+        - "airway"
+        - "breathing"
+        - "throat"
+        - "swelling"
+      scene_safety:
+        - "safe"
+        - "bees"
+        - "swarm"
+    must_ask_or_do:
+      - "safe"          # Still must confirm they aren't standing in a bee swarm
+      - "airway"        # Immediate respiratory monitoring
+      - "breathing"
+      - "epi"
     life_threat: true
     must_not_contain:
-      - "definitely"
+      - "wait and see"  # Lethal delay
+      - "benadryl first"# Oral meds are too slow for an active airway block
 
   - id: hypothermia
-    description: "Cold exposure, altered mental status"
+    description: "Cold exposure, altered mental status (AMS). Testing shielding before warming."
     opening_line: "We've been out in the rain for hours, one person is shivering badly and acting weird"
+    expected_behaviors:
+      - flags_hypothermia_concern_without_definitive_diagnosis
+      - stops_cold_exposure_first
+      - asks_mental_status
+      - checks_swallow_before_oral_intake
+      - avoids_rubbing_or_aggressive_rewarming
+      - limits_questions_to_2_or_3
     expected_in_first_response:
-      - "scene"
-      - "conscious"
-    must_ask_before_treatment:
-      - "shivering"
-      - "mental"
-      - "temperature"
+      - "shelter"       # Must stop the exposure (get out of wet clothes/rain)
+      - "dry"           # Remove the cold engine
+    expected_topic_groups:
+      exposure_control:
+        - "shelter"
+        - "dry"
+        - "wet clothes"
+        - "rain"
+        - "insulate"
+      mental_status:
+        - "alert"
+        - "conscious"
+        - "acting weird"
+        - "confused"
+        - "avpu"
+      safe_oral_intake:
+        - "swallow"
+        - "conscious"
+        - "alert"
+    must_assess_before_calories:
+      - "swallow"       # Must check ability to swallow before giving hot sugary liquids (choking hazard)
+      - "conscious"     # Cannot feed an unconscious hypothermic patient
+      - "alert"
+      - "mental status"
     life_threat: true
     must_not_contain:
-      - "definitely"
+      - "fire"          # Do not stick a severely hypothermic patient right next to a roaring fire (rewarming shock)
+      - "rub"           # Do not rub frozen tissue/frostbite
 
   - id: chest_pain
-    description: "Chest pain — cardiac vs musculoskeletal ambiguity"
+    description: "Chest pain — Suspected cardiac event in the wilderness."
     opening_line: "A 55 year old man in our group has chest pain and feels short of breath"
+    expected_behaviors:
+      - flags_life_threat_immediately
+      - reduces_exertion
+      - positions_for_comfort
+      - considers_aspirin_if_appropriate
+      - asks_about_contraindications_or_history
+      - does_not_diagnose_definitively
+      - does_not_have_patient_walk_out
     expected_in_first_response:
-      - "scene"
-      - "safe"
-    must_ask_before_treatment:
-      - "breathing"
-      - "skin"
-      - "conscious"
+      - "rest"          # Stop all physical exertion immediately
+      - "sit"           # Position of comfort to reduce cardiac workload
+    expected_topic_groups:
+      exertion_reduction:
+        - "rest"
+        - "stop"
+        - "sit"
+        - "position of comfort"
+      aspirin:
+        - "aspirin"
+        - "asa"
+      cardiac_history:
+        - "history"
+        - "nitro"
+        - "nitroglycerin"
+        - "allergy"
+        - "bleeding"
+    must_ask_or_administer:
+      - "aspirin"       # Critical first aid intervention for cardiac chest pain
+      - "asa"           # Abbreviation for aspirin
+      - "history"       # Check if they have a personal nitroglycerin prescription
+      - "nitro"
+      - "allergy"
     life_threat: true
     must_not_contain:
-      - "heart attack"
-      - "definitely"
+      - "heart attack"  # Angina vs MI cannot be distinguished in the field; treat as cardiac event
+      - "walk"          # Never make a cardiac patient walk out

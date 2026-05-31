@@ -16,6 +16,7 @@ from rich.live import Live
 from rich.markdown import Markdown
 
 from llm.ollama_client import build_messages, chat, is_ollama_running
+from patient.state import PatientState
 from rag.query import rag_engine
 
 console = Console()
@@ -45,6 +46,7 @@ def main():
         )
 
     history: list[dict] = []
+    patient_state = PatientState()
 
     while True:
         try:
@@ -62,17 +64,22 @@ def main():
 
         if user_input.lower() in ("new", "reset", "new patient"):
             history = []
+            patient_state = PatientState()
             console.print("[dim]Assessment cleared. Ready for new patient.[/dim]")
             continue
 
-        # Retrieve relevant context from ChromaDB
-        context_chunks = rag_engine.retrieve(user_input)
+        patient_state.update_from_text(user_input)
+
+        # Retrieve relevant context from ChromaDB using both the latest turn
+        # and durable patient facts from previous turns.
+        retrieval_query = patient_state.to_retrieval_query(user_input)
+        context_chunks = rag_engine.retrieve(retrieval_query)
 
         if context_chunks:
             console.print(f"[dim]Retrieved {len(context_chunks)} context chunk(s) from knowledge base.[/dim]")
 
         # Build prompt with context + conversation history
-        messages = build_messages(user_input, context_chunks, history)
+        messages = build_messages(user_input, context_chunks, history, patient_state)
 
         # Stream the response
         console.print("\n[bold green]Assistant:[/bold green] ", end="")

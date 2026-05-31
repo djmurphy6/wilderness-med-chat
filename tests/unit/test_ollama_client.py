@@ -5,6 +5,7 @@ No Ollama connection required — tests only deterministic logic.
 
 import pytest
 from llm.ollama_client import build_messages, SYSTEM_PROMPT
+from patient.state import PatientState
 
 
 pytestmark = pytest.mark.unit
@@ -51,6 +52,18 @@ class TestBuildMessages:
         messages = build_messages("any query", sample_context_chunks)
         system_content = messages[0]["content"]
         assert "---" in system_content
+
+    def test_patient_state_injected_into_system_message(self, sample_context_chunks):
+        state = PatientState()
+        state.update_from_text("My friend got hit in the head and is unresponsive but still breathing.")
+
+        messages = build_messages("What next?", sample_context_chunks, patient_state=state)
+        system_content = messages[0]["content"]
+
+        assert "## Current Patient State" in system_content
+        assert "Mechanism: head impact" in system_content
+        assert "Mental status: unresponsive" in system_content
+        assert "Breathing: present" in system_content
 
 
 class TestSystemPrompt:

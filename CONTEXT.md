@@ -11,19 +11,34 @@ A voice-driven wilderness medicine assistant designed to run fully offline on an
 
 ## Core Architecture
 
-### 1. Language Model — Ollama
-- Run a local LLM via [Ollama](https://ollama.com/) (no internet required at inference time)
-- Model TBD — likely a quantized 7B or 8B model (e.g. `llama3`, `mistral`, `phi3`) chosen for speed/accuracy tradeoff on edge hardware
-- Ollama exposes a local REST API (`http://localhost:11434`)
+### 1. Language Model — Ollama + gemma3:4b
+- Local LLM via [Ollama](https://ollama.com/) — no internet at inference time
+- Model: **`gemma3:4b`** — fits in Jetson Nano 4GB RAM with 4-bit quantization; good reasoning for its size
+- Ollama REST API at `http://localhost:11434`
+- System prompt encodes the full **Patient Assessment System (PAS)** — model walks the rescuer through scene size-up → primary survey → SAMPLE history → vitals → focused exam → problem list → monitoring
+- Each turn the system prompt is augmented with a live **Patient State** summary (see below)
 
-### 2. Knowledge Base — RAG with LlamaIndex + ChromaDB
-- **Retrieval-Augmented Generation (RAG)** to ground the LLM in authoritative wilderness medicine literature
-- **LlamaIndex** as the RAG orchestration framework (document ingestion, chunking, querying)
-- **ChromaDB** as the local vector store (persistent, no server required)
-- Source documents: PDFs of wilderness medicine textbooks, WEMS/WAFA/WEMT protocols, NOLS Wilderness Medicine guides, etc.
-- Ingestion pipeline: PDF → text chunks → embeddings → ChromaDB index
+### 2. Structured Patient Memory — PatientState
+- **`patient/state.py`** — `PatientState` dataclass updated each turn from user input
+- **Deterministic extraction** (no LLM) — keyword matching, not inference — fast and reliable
+- **Tracked fields**: mechanism of injury, nature of illness, mental status (AVPU), airway, breathing, major bleeding, spine concern, chief complaint, current PAS step, active problem list
+- **`to_prompt_section()`** — renders a compact case summary injected into the system prompt every turn, keeping the model anchored to the actual patient
+- **`to_retrieval_query()`** — enriches the ChromaDB query with accumulated case facts so short follow-up turns (e.g. "yes still breathing") don't pull irrelevant chunks
+- Resets to a fresh `PatientState()` when the user types `new` / `reset`
 
-### 3. Speech-to-Text — faster-whisper
+### 3. Knowledge Base — RAG with LlamaIndex + ChromaDB
+- **Retrieval-Augmented Generation (RAG)** grounds the LLM in authoritative wilderness medicine literature
+- **LlamaIndex** for document ingestion, chunking, and querying
+- **ChromaDB** as the local persistent vector store (no server required)
+- **Embedding model**: `nomic-embed-text` via Ollama
+- **Chunk settings**: 512 tokens, 64-token overlap
+- **Corpus ingested** (2,487 chunks across 3 PDFs):
+  - Aerie Backcountry Medicine, 15th ed.
+  - Wilderness Medicine: Beyond First Aid, 7th ed.
+  - WFA Text
+- Ingestion pipeline: PDF → text chunks → `nomic-embed-text` embeddings → ChromaDB
+
+### 4. Speech-to-Text — faster-whisper
 - **faster-whisper** (CTranslate2-based Whisper implementation)
 - Chosen over `mlx-whisper` because MLX is Apple Silicon only — faster-whisper runs on:
   - M1 Mac (CPU, fast enough for real-time)
@@ -31,9 +46,9 @@ A voice-driven wilderness medicine assistant designed to run fully offline on an
 - Records audio from microphone, transcribes locally with no network call
 - Model: `base.en` or `small.en` (tradeoff between speed and accuracy)
 
-### 4. Text-to-Speech — Kokoro-82M (ONNX)
+### 5. Text-to-Speech — Kokoro-82M (ONNX)
 - **Kokoro-82M** via ONNX runtime
-- Chosen because: natural sounding, small (82M params), ONNX means it runs on both Mac (CPU/CoreML) and Jetson Nano (CUDA or CPU) without code changes
+- Natural sounding, small (82M params), cross-platform (Mac CPU + Jetson CUDA) via ONNX
 - Fully offline, no server required
 - macOS `say` command kept as a zero-dependency dev fallback
 
@@ -44,7 +59,7 @@ A voice-driven wilderness medicine assistant designed to run fully offline on an
 ```
 [User speaks]
      ↓
-[MLX Whisper — STT]
+[faster-whisper — STT]
      ↓
 [Transcribed text query]
      ↓
@@ -52,13 +67,13 @@ A voice-driven wilderness medicine assistant designed to run fully offline on an
      ↓
 [Relevant document chunks retrieved]
      ↓
-[Prompt assembled: system prompt + context chunks + user query]
+[Prompt assembled: PAS system prompt + context chunks + conversation history + user query]
      ↓
-[Ollama LLM — local inference]
+[Ollama LLM (gemma3:4b) — local inference]
      ↓
 [LLM response text]
      ↓
-[TTS engine — speech output]
+[Kokoro-82M ONNX — TTS]
      ↓
 [User hears answer]
 ```
@@ -67,12 +82,12 @@ A voice-driven wilderness medicine assistant designed to run fully offline on an
 
 ## Development Environment
 
-- **Platform**: Apple M1 Pro MacBook (development); edge device (eventual deployment target)
-- **Language**: Python 3.11+
-- **Package manager**: `uv` (dev), `pip` (deployment)
+- **Platform**: Apple M1 Pro MacBook (development); Jetson Nano (deployment)
+- **Language**: Python 3.11
+- **Virtual env**: `.venv/` (standard venv + pip)
 - **Ollama**: running locally via `ollama serve`
-- **ChromaDB**: local persistent store, no Docker needed
-- **LLM model**: `gemma3:4b` — fits in Jetson Nano 4GB RAM with 4-bit quantization; good reasoning for its size
+- **ChromaDB**: persistent local store at `data/chroma/`
+- **Models pulled**: `gemma3:4b` (3.3GB), `nomic-embed-text` (274MB)
 
 ---
 
@@ -80,41 +95,68 @@ A voice-driven wilderness medicine assistant designed to run fully offline on an
 
 - **Fully offline** — zero network calls at runtime (internet only needed during setup/ingestion)
 - **Low latency** — response should feel conversational, not slow
-- **Accuracy / safety** — RAG must pull from vetted wilderness medicine sources; hallucination risk must be minimized
-- **Edge-deployable** — architecture should map cleanly to ARM Linux (Raspberry Pi 5, NVIDIA Jetson, etc.)
-- **Voice-first UX** — hands-free operation is the primary interface; text fallback acceptable
+- **Safety** — model is an aid, not a decision-maker; no definitive diagnoses; always route to evacuate when uncertain
+- **PAS-driven** — model follows the Patient Assessment System, asks 2–3 questions at a time, never dumps the full protocol
+- **Edge-deployable** — architecture maps cleanly to ARM64 Linux + CUDA (Jetson Nano)
+- **Voice-first UX** — hands-free operation is the primary interface; text CLI available for dev/testing
 
 ---
 
-## Planned Source Documents (RAG Corpus)
+## RAG Corpus
 
-- NOLS Wilderness Medicine (textbook)
-- Wilderness Medical Associates (WMA) protocols
-- Wilderness Medicine Institute (WMI) field guides
-- WEMS/WAFA/WEMT curriculum materials
-- Additional PDFs TBD — all stored in `data/pdfs/`
+All PDFs stored in `data/pdfs/`. ChromaDB index at `data/chroma/`.
+
+| File | Description |
+|---|---|
+| `Aerie-15th-Edition-Manual-15-02.pdf` | Aerie Backcountry Medicine, 15th ed. |
+| `wilderness-medicine-beyond-first-aid-7th-edition-*.pdf` | Wilderness Medicine: Beyond First Aid, 7th ed. |
+| `WFA+Text.pdf` | WFA curriculum text |
+
+**Current index**: 2,487 chunks (512 tokens, 64 overlap)
 
 ---
 
-## Project Structure (Planned)
+## Project Structure
 
 ```
 wilderness_med_chat/
-├── CONTEXT.md              # This file
+├── CONTEXT.md
+├── .env                        # GOOGLE_API_KEY (eval only, gitignored)
+├── .env.example
+├── requirements.txt
+├── pytest.ini
+├── Makefile
+├── main_text.py                # Phase 1: text CLI loop (WORKING)
+├── main.py                     # Phase 3: full voice loop (TODO)
 ├── data/
-│   └── pdfs/               # Source wilderness medicine PDFs
-├── ingest/
-│   └── ingest.py           # PDF ingestion pipeline → ChromaDB
-├── rag/
-│   └── query.py            # LlamaIndex RAG query interface
-├── stt/
-│   └── transcribe.py       # MLX Whisper speech-to-text
-├── tts/
-│   └── speak.py            # TTS engine wrapper
+│   ├── pdfs/                   # Source wilderness medicine PDFs
+│   └── chroma/                 # ChromaDB vector index (2,487 chunks)
 ├── llm/
-│   └── ollama_client.py    # Ollama API client
-├── main.py                 # Main voice loop
-└── requirements.txt        # Python dependencies
+│   └── ollama_client.py        # Ollama wrapper, PAS system prompt, message assembly
+├── patient/
+│   └── state.py                # PatientState — deterministic structured memory across turns
+├── ingest/
+│   └── ingest.py               # PDF → chunks → embeddings → ChromaDB
+├── rag/
+│   └── query.py                # ChromaDB retrieval, lazy-loaded singleton
+├── tts/
+│   └── speak.py                # Kokoro-82M ONNX TTS (TODO)
+├── stt/
+│   └── transcribe.py           # faster-whisper STT (TODO)
+└── tests/
+    ├── conftest.py              # Shared fixtures, ollama_available() guard
+    ├── unit/
+    │   ├── test_ollama_client.py    # 12 tests — message building, prompt structure
+    │   └── test_patient_state.py    # 7 tests — deterministic extraction, retrieval enrichment
+    ├── integration/
+    │   ├── test_llm_live.py         # 4 tests — live Ollama
+    │   └── test_rag_pipeline.py     # 5 tests — live RAG
+    ├── scenarios/
+    │   ├── fixtures/scenarios.yaml  # 5 patient cases (ankle, head, anaphylaxis, hypothermia, chest)
+    │   └── test_pas_behavior.py     # PAS behavioral assertions + multi-turn checks
+    └── eval/
+        ├── generate_dataset.py      # Generates eval_dataset.jsonl via Gemini 2.0 Flash
+        └── test_ragas_eval.py       # RAGAS faithfulness + context precision (cloud judge)
 ```
 
 ---
@@ -122,31 +164,46 @@ wilderness_med_chat/
 ## Build Phases
 
 ### Phase 1 — Core (text in / text out) ✅ DONE
-- Ollama + gemma3:4b working
-- PDF ingestion → ChromaDB (`ingest/ingest.py`)
-- RAG query → LLM response (`rag/query.py`, `llm/ollama_client.py`)
-- `main_text.py` CLI loop — streaming responses, sliding conversation window
+- `gemma3:4b` + `nomic-embed-text` pulled via Ollama
+- 3 PDFs ingested → 2,487 ChromaDB chunks
+- PAS system prompt — structured 7-step patient assessment workflow
+- **Structured patient memory** — `PatientState` tracks MOI, AVPU, airway, breathing, bleeding, spine concern, problem list across turns; enriches both the system prompt and RAG retrieval query
+- `main_text.py` — streaming CLI loop, 10-turn history window, `new`/`reset` command
+- Full test suite: 12 unit (ollama_client) + 7 unit (patient_state) + integration + scenario + RAGAS eval infrastructure
 
-### Phase 2 — Voice out
-- Kokoro-82M ONNX TTS wired in
-- `main_tts.py`
+### Phase 2 — Voice out ⬜ NEXT
+- Kokoro-82M ONNX TTS (`tts/speak.py`)
+- `main_tts.py` — text in, spoken response out
 
-### Phase 3 — Full voice loop
-- faster-whisper STT wired in
+### Phase 3 — Full voice loop ⬜
+- faster-whisper STT (`stt/transcribe.py`)
 - `main.py` — mic → STT → RAG → LLM → TTS → speaker
 
-### Phase 4 — Edge deployment
+### Phase 4 — Edge deployment ⬜
 - Test on Jetson Nano
-- Optimize model quantization / chunk sizes
+- Optimize chunk sizes (RAGAS context precision score will guide this)
 - Startup script, systemd service
+
+---
+
+## Test Commands
+
+```bash
+make test-unit          # 12 fast tests, no Ollama needed
+make test-integration   # live RAG + LLM tests
+make test-scenarios     # PAS behavioral evals (5 patient scenarios)
+make eval-generate      # generate eval_dataset.jsonl via Gemini (needs GOOGLE_API_KEY)
+make eval               # RAGAS faithfulness + context precision
+make ingest             # re-ingest PDFs into ChromaDB
+make run                # launch text chat loop
+```
 
 ---
 
 ## Open Questions / Decisions Pending
 
-- [ ] Embedding model for ChromaDB — `nomic-embed-text` via Ollama (keeps everything in Ollama) vs `sentence-transformers/all-MiniLM-L6-v2` (faster, self-contained)
-- [ ] Chunk size / overlap strategy for medical PDFs (medical content is dense; likely 512 tokens, 64 overlap)
-- [ ] Multi-turn conversation context — sliding window of last N turns prepended to prompt
 - [ ] Wake word vs push-to-talk activation
 - [ ] UI — voice only, or small LCD/e-ink display on Nano?
 - [ ] Jetson Nano JetPack version and CUDA compatibility for Ollama
+- [ ] Chunk size tuning — run RAGAS context precision after eval dataset is generated to validate 512/64 or try 256/32
+- [ ] Multi-turn context window size — currently 10 turns (20 messages); may need adjustment for longer assessments

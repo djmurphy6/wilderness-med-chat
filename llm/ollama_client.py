@@ -6,6 +6,8 @@ Handles streaming and non-streaming completions.
 from typing import Generator
 import ollama
 
+from patient.state import PatientState
+
 
 MODEL = "gemma3:4b"
 
@@ -22,6 +24,8 @@ don't. Never tell them what they must do — help them see what to consider.
 - Never diagnose definitively. Use: "signs of", "possible", "suspect".
 - If you detect a life threat, name it immediately and clearly before anything else.
 - Always base your guidance on the retrieved wilderness medicine context provided.
+- Use the current patient state as the anchor for the case. Do not drift to unrelated
+  wilderness conditions unless the user reports supporting signs.
 - When in doubt, the answer is: stabilize and evacuate.
 
 ## PATIENT ASSESSMENT SYSTEM — follow this order strictly
@@ -94,7 +98,12 @@ def _stream(messages: list[dict]) -> Generator[str, None, None]:
             yield content
 
 
-def build_messages(user_query: str, context_chunks: list[str], history: list[dict] | None = None) -> list[dict]:
+def build_messages(
+    user_query: str,
+    context_chunks: list[str],
+    history: list[dict] | None = None,
+    patient_state: PatientState | None = None,
+) -> list[dict]:
     """
     Assemble the full message list for a RAG query.
 
@@ -102,12 +111,19 @@ def build_messages(user_query: str, context_chunks: list[str], history: list[dic
         user_query: The user's question.
         context_chunks: Retrieved document snippets from ChromaDB.
         history: Prior conversation turns (list of role/content dicts).
+        patient_state: Structured facts extracted from the current assessment.
     """
     context_text = "\n\n---\n\n".join(context_chunks) if context_chunks else "No relevant context found."
+    state_text = patient_state.to_prompt_section() if patient_state else ""
+    state_section = f"\n\n{state_text}" if state_text else ""
 
     system = {
         "role": "system",
-        "content": SYSTEM_PROMPT + f"\n\n## Retrieved Wilderness Medicine Context\n\n{context_text}",
+        "content": (
+            SYSTEM_PROMPT
+            + state_section
+            + f"\n\n## Retrieved Wilderness Medicine Context\n\n{context_text}"
+        ),
     }
 
     messages = [system]

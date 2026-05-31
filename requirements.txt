@@ -20,3 +20,9 @@ soundfile>=0.12.1
 # Utilities
 python-dotenv>=1.0.0
 rich>=13.7.0
+
+# Eval (cloud judge — test pipeline only, not used in production)
+ragas>=0.2.0
+langchain-google-genai>=1.0.0
+google-genai>=1.0.0
+datasets>=2.18.0
