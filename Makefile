@@ -19,13 +19,13 @@ test-scenarios:
 test:
 	$(PYTEST) -m "unit or integration or scenario"
 
-## Generate synthetic eval dataset from ChromaDB chunks via GPT-4o-mini
-## Requires: make ingest first, OPENAI_API_KEY in .env
+## Generate synthetic eval dataset from ChromaDB chunks via Gemini 2.5 Flash
+## Requires: make ingest first, GOOGLE_API_KEY in .env
 eval-generate:
 	$(VENV) -m tests.eval.generate_dataset
 
-## Run RAGAS faithfulness + context precision eval (cloud judge via OpenAI)
-## Requires: make eval-generate first, OPENAI_API_KEY in .env
+## Run RAGAS faithfulness + context precision eval (cloud judge via Gemini)
+## Requires: make eval-generate first, GOOGLE_API_KEY in .env
 eval:
 	$(PYTEST) -m eval -s -v
 

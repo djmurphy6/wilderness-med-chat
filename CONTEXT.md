@@ -120,6 +120,7 @@ All PDFs stored in `data/pdfs/`. ChromaDB index at `data/chroma/`.
 
 ```
 wilderness_med_chat/
+├── README.md
 ├── CONTEXT.md
 ├── .env                        # GOOGLE_API_KEY (eval only, gitignored)
 ├── .env.example
@@ -155,7 +156,7 @@ wilderness_med_chat/
     │   ├── fixtures/scenarios.yaml  # 5 patient cases (ankle, head, anaphylaxis, hypothermia, chest)
     │   └── test_pas_behavior.py     # PAS behavioral assertions + multi-turn checks
     └── eval/
-        ├── generate_dataset.py      # Generates eval_dataset.jsonl via Gemini 2.0 Flash
+        ├── generate_dataset.py      # Generates eval_dataset.jsonl via Gemini 2.5 Flash
         └── test_ragas_eval.py       # RAGAS faithfulness + context precision (cloud judge)
 ```
 

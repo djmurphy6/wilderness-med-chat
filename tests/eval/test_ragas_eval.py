@@ -77,7 +77,13 @@ def build_ragas_dataset(records: list[dict]) -> "Dataset":
 
 def get_gemini_llm():
     from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=os.getenv("GOOGLE_API_KEY"))
+    # thinking_budget=0 disables Gemini 2.5-flash's chain-of-thought tokens so
+    # RAGAS's JSON score parser can find the answer in the response.
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        google_api_key=os.getenv("GOOGLE_API_KEY"),
+        model_kwargs={"thinking_config": {"thinking_budget": 0}},
+    )
     embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004", google_api_key=os.getenv("GOOGLE_API_KEY"))
     return llm, embeddings
 
