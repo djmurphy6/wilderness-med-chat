@@ -127,6 +127,9 @@ wilderness_med_chat/
 ├── requirements.txt
 ├── pytest.ini
 ├── Makefile
+├── server.py                   # FastAPI web server (make serve → http://localhost:8080)
+├── static/
+│   └── index.html              # Single-page chat UI with voice + streaming
 ├── main_text.py                # Text-only CLI loop
 ├── main.py                     # Voice-first CLI loop (Enter -> mic STT -> LLM -> TTS)
 ├── data/
@@ -180,6 +183,16 @@ wilderness_med_chat/
 - faster-whisper STT (`stt/transcribe.py`) for short microphone capture + transcription
 - `main.py` — voice-first loop with typed fallback, RAG retrieval, LLM streaming, and TTS playback
 
+### Phase 3.5 — Web UI ✅ DONE
+- `server.py` — FastAPI server wrapping the full RAG + LLM + PatientState pipeline
+- `static/index.html` — polished single-page chat UI (no build step)
+- Streaming token-by-token via SSE (`/chat` endpoint with `text/event-stream`)
+- Voice input: browser MediaRecorder + OfflineAudioContext resampling to 16 kHz → POST to `/transcribe` → faster-whisper
+- Live Patient Assessment sidebar: updates after every assistant turn showing MOI, AVPU, airway, breathing, bleeding, spine, chief complaint, PAS step, active problem list
+- New Patient reset button clears session and PatientState in one click
+- Health indicator in header (Ollama status + KB warning if RAG is empty)
+- `make serve` starts the server at http://localhost:8080
+
 ### Phase 4 — Edge deployment ⬜
 - Test on Jetson Nano
 - Optimize chunk sizes (RAGAS context precision score will guide this)
@@ -198,6 +211,7 @@ make eval               # RAGAS faithfulness + context precision
 make ingest             # re-ingest PDFs into ChromaDB
 make run                # launch voice-first loop
 make run-text           # launch text-only loop
+make serve              # launch web UI at http://localhost:8080
 ```
 
 ---

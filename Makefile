@@ -1,7 +1,7 @@
 VENV = .venv/bin/python
 PYTEST = .venv/bin/pytest
 
-.PHONY: test test-unit test-integration test-scenarios eval-generate eval ingest run run-text help
+.PHONY: test test-unit test-integration test-scenarios eval-generate eval ingest run run-text serve help
 
 ## Run only fast unit tests (no Ollama needed)
 test-unit:
@@ -29,6 +29,10 @@ eval-generate:
 eval:
 	$(PYTEST) -m eval -s -v
 
+## Quick smoke-test eval on 5 random questions (~2 min instead of ~20 min)
+eval-quick:
+	RAGAS_SAMPLE=5 $(PYTEST) -m eval -s -v
+
 ## Ingest all PDFs in data/pdfs/
 ingest:
 	$(VENV) -m ingest.ingest
@@ -40,6 +44,10 @@ run:
 ## Launch text-only chat loop
 run-text:
 	$(VENV) main_text.py
+
+## Launch the web UI (browser chat with voice + text input)
+serve:
+	.venv/bin/uvicorn server:app --host 0.0.0.0 --port 8088 --reload
 
 ## Show this help
 help:
