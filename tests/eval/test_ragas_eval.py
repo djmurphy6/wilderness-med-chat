@@ -77,7 +77,7 @@ def build_ragas_dataset(records: list[dict]) -> "Dataset":
 
 def get_gemini_llm():
     from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=os.getenv("GOOGLE_API_KEY"))
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=os.getenv("GOOGLE_API_KEY"))
     embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004", google_api_key=os.getenv("GOOGLE_API_KEY"))
     return llm, embeddings
 
@@ -102,7 +102,8 @@ def test_faithfulness():
         embeddings=embeddings,
     )
 
-    score = result["faithfulness"]
+    raw = result["faithfulness"]
+    score = float(sum(raw) / len(raw)) if isinstance(raw, list) else float(raw)
     print(f"\nFaithfulness score: {score:.3f} (threshold: {FAITHFULNESS_THRESHOLD})")
 
     assert score >= FAITHFULNESS_THRESHOLD, (
@@ -131,7 +132,8 @@ def test_context_precision():
         embeddings=embeddings,
     )
 
-    score = result["context_precision"]
+    raw = result["context_precision"]
+    score = float(sum(raw) / len(raw)) if isinstance(raw, list) else float(raw)
     print(f"\nContext Precision score: {score:.3f} (threshold: {CONTEXT_PRECISION_THRESHOLD})")
 
     assert score >= CONTEXT_PRECISION_THRESHOLD, (

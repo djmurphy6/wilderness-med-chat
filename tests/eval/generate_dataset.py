@@ -61,7 +61,7 @@ def generate_qa_pair(client: "genai.Client", chunk: str, retries: int = 3) -> di
     for attempt in range(retries):
         try:
             response = client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 contents=GENERATION_PROMPT.format(chunk=chunk),
                 config=types.GenerateContentConfig(
                     temperature=0.3,
@@ -112,15 +112,28 @@ def main(n_chunks: int = 40):
 
     console.print(f"[green]{total} chunks in index. Sampling {n_chunks} for eval dataset...[/green]")
 
-    # Sample evenly across the collection to cover the whole corpus
-    results = collection.get(limit=n_chunks, include=["documents"])
-    chunks = results["documents"]
+    # Sample randomly across the full corpus so we don't just hit front matter / TOC.
+    # Fetch more than needed, shuffle, then trim after filtering.
+    import random
+    fetch_n = min(total, n_chunks * 4)
+    offset = random.randint(0, max(0, total - fetch_n))
+    results = collection.get(limit=fetch_n, offset=offset, include=["documents"])
+    all_chunks = results["documents"]
+    random.shuffle(all_chunks)
+    chunks = all_chunks[:n_chunks * 2]  # oversample; filtering below will trim
 
     pairs = []
 
-    for chunk in track(chunks, description="Generating Q&A pairs via Gemini 2.0 Flash..."):
-        if len(chunk.strip()) < 100:
-            continue  # skip very short chunks (headers, page numbers, etc.)
+    for chunk in track(chunks, description="Generating Q&A pairs via Gemini 2.5 Flash..."):
+        if len(pairs) >= n_chunks:
+            break
+        stripped = chunk.strip()
+        # Skip short chunks and TOC/index entries (high ratio of dots = page ref lines)
+        if len(stripped) < 300:
+            continue
+        dot_ratio = stripped.count(".") / max(len(stripped), 1)
+        if dot_ratio > 0.15:  # TOC lines are typically >15% dots
+            continue
         pair = generate_qa_pair(client, chunk)
         if pair:
             pairs.append(pair)
