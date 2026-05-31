@@ -8,746 +8,601 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:          #0d1117;
-  --surface:     #161b22;
-  --surface-2:   #21262d;
-  --border:      #30363d;
-  --border-soft: #21262d;
-
-  --text:        #e6edf3;
-  --text-soft:   #8b949e;
-  --text-dim:    #484f58;
-
-  --green:       #3fb950;
-  --green-glow:  #238636;
-  --green-dim:   #0d2a1c;
-  --amber:       #d29922;
-  --amber-dim:   #2d1f00;
-  --red:         #f85149;
-  --red-dim:     #2d0a0a;
-  --blue:        #58a6ff;
-
-  --user-bg:     #0d2b1a;
-  --user-border: #238636;
-  --asst-bg:     #161b22;
-  --asst-border: #30363d;
-
-  --radius:      10px;
-  --radius-sm:   6px;
-  --transition:  0.18s ease;
+  --teal:      #22d3a7;
+  --teal-mid:  #0d9488;
+  --teal-dark: #065f46;
+  --amber:     #f59e0b;
+  --red:       #ef4444;
+  --blue:      #60a5fa;
+  --text:      #dff0e8;
+  --text-soft: #6b9080;
+  --text-dim:  #2e4040;
+  --surface:   rgba(255,255,255,0.05);
+  --border:    rgba(255,255,255,0.08);
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
-  background: var(--bg);
+  background: radial-gradient(ellipse at 50% 55%, #081510 0%, #030608 100%);
   color: var(--text);
   height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  user-select: none;
 }
 
-/* ── Header ─────────────────────────────────────────────── */
+/* ── Header ──────────────────────────────────────────────── */
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 18px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
   flex-shrink: 0;
-  gap: 12px;
 }
 
 .logo {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-soft);
 }
 
-.logo-icon { font-size: 1.3rem; line-height: 1; }
+.header-right { display: flex; align-items: center; gap: 10px; }
 
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.status-pill {
+.pill {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 5px 11px;
   border-radius: 20px;
-  background: var(--surface-2);
+  background: var(--surface);
   border: 1px solid var(--border);
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   color: var(--text-soft);
+  cursor: pointer;
+  transition: border-color .2s, color .2s;
 }
+.pill:hover { border-color: rgba(255,255,255,0.15); color: var(--text); }
+.pill.active { border-color: var(--teal-mid); color: var(--teal); }
 
 .status-dot {
-  width: 7px; height: 7px;
+  width: 6px; height: 6px;
   border-radius: 50%;
   background: var(--text-dim);
-  transition: background var(--transition), box-shadow var(--transition);
+  transition: background .3s, box-shadow .3s;
   flex-shrink: 0;
 }
-.status-dot.online  { background: var(--green); box-shadow: 0 0 5px var(--green-glow); }
-.status-dot.warning { background: var(--amber); }
-.status-dot.error   { background: var(--red); }
+.status-dot.online { background: var(--teal); box-shadow: 0 0 5px var(--teal-mid); }
+.status-dot.error  { background: var(--red); }
 
-.rag-warning {
-  display: none;
-  font-size: 0.72rem;
-  color: var(--amber);
+/* ── Patient Assessment panel ────────────────────────────── */
+#patient-panel {
+  position: fixed;
+  top: 54px; right: 14px;
+  width: 230px;
+  background: rgba(6, 12, 10, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(34,211,167,0.15);
+  border-radius: 14px;
+  padding: 14px;
+  z-index: 300;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.97);
+  pointer-events: none;
+  transition: opacity .22s ease, transform .22s ease;
 }
-.rag-warning.visible { display: inline; }
+#patient-panel.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
 
-button.reset-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-soft);
-  padding: 5px 12px;
-  border-radius: var(--radius-sm);
+.panel-section-title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+#panel-step {
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.panel-field {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-bottom: 5px;
+  font-size: 0.76rem;
+}
+.panel-field-icon { font-size: 0.82rem; flex-shrink: 0; }
+.panel-field-label { color: var(--text-dim); font-size: 0.66rem; text-transform: uppercase; letter-spacing: .05em; flex-shrink: 0; }
+.panel-field-val { margin-left: auto; text-align: right; font-size: 0.76rem; }
+
+.panel-concerns-title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--amber);
+  margin: 8px 0 5px;
+}
+.panel-chip {
+  display: inline-block;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(245,158,11,.12);
+  color: var(--amber);
+  border: 1px solid rgba(245,158,11,.2);
+  margin: 2px 2px 0 0;
+}
+
+/* ── Main layout ─────────────────────────────────────────── */
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 24px 0;
+  gap: 28px;
+  position: relative;
+  min-height: 0;
+}
+
+/* ── Response text ───────────────────────────────────────── */
+#text-area {
+  width: 100%;
+  max-width: 580px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-height: 80px;
+}
+
+#user-label {
   font-size: 0.78rem;
-  cursor: pointer;
-  transition: border-color var(--transition), color var(--transition);
+  color: var(--text-dim);
+  font-style: italic;
+  transition: opacity .5s;
+  text-align: center;
+  opacity: 0;
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-button.reset-btn:hover {
-  border-color: var(--text-soft);
+#user-label.show { opacity: 1; }
+
+#response-text {
+  font-size: clamp(1rem, 2.2vw, 1.15rem);
+  line-height: 1.75;
   color: var(--text);
-}
-
-/* ── Main Layout ─────────────────────────────────────────── */
-main {
-  display: grid;
-  grid-template-columns: 270px 1fr;
-  flex: 1;
-  overflow: hidden;
-}
-
-/* ── Sidebar ─────────────────────────────────────────────── */
-aside {
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.sidebar-header {
-  padding: 14px 16px 10px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  border-bottom: 1px solid var(--border-soft);
-  flex-shrink: 0;
-}
-
-.sidebar-body {
-  flex: 1;
+  text-align: center;
   overflow-y: auto;
-  padding: 12px 14px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.pas-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  border: 1px solid;
-  margin-bottom: 6px;
-  align-self: flex-start;
-}
-.pas-badge.scene   { color: #d29922; border-color: #2d1f00; background: #1c1500; }
-.pas-badge.primary { color: #e07330; border-color: #3d1a00; background: #201000; }
-.pas-badge.done    { color: var(--green); border-color: var(--green-dim); background: #071510; }
-
-.state-field {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--border-soft);
-}
-
-.field-icon { font-size: 0.9rem; flex-shrink: 0; line-height: 1.5; }
-
-.field-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-
-.field-label {
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-dim);
-}
-
-.field-value {
-  font-size: 0.82rem;
-  color: var(--text);
-  word-break: break-word;
-}
-
-.field-value.critical { color: var(--red); font-weight: 600; }
-.field-value.warning  { color: var(--amber); }
-.field-value.ok       { color: var(--green); }
-
-.problems-section {
-  margin-top: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.problems-title {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--amber);
-  padding: 2px 0 4px;
-}
-
-.problem-chip {
-  font-size: 0.78rem;
-  padding: 4px 9px;
-  border-radius: 4px;
-  background: var(--amber-dim);
-  color: var(--amber);
-  border: 1px solid #4a3200;
-  word-break: break-word;
-}
-
-.empty-state {
-  font-size: 0.82rem;
-  color: var(--text-dim);
-  line-height: 1.5;
-  padding: 8px 2px;
-}
-
-/* ── Chat Section ────────────────────────────────────────── */
-.chat-section {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--bg);
-}
-
-/* ── Messages ────────────────────────────────────────────── */
-.messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  max-height: min(260px, 36vh);
+  width: 100%;
+  padding: 0 6px;
   scroll-behavior: smooth;
 }
+#response-text::-webkit-scrollbar { width: 3px; }
+#response-text::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
 
-.messages::-webkit-scrollbar { width: 5px; }
-.messages::-webkit-scrollbar-track { background: transparent; }
-.messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-.message {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  max-width: 820px;
-}
-
-.message.user {
-  flex-direction: row-reverse;
-  align-self: flex-end;
-}
-
-.msg-avatar {
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 700;
-  margin-top: 2px;
-}
-
-.message.assistant .msg-avatar {
-  background: var(--green-dim);
-  color: var(--green);
-  border: 1px solid var(--green-glow);
-}
-
-.message.user .msg-avatar {
-  background: var(--surface-2);
-  color: var(--text-soft);
-  border: 1px solid var(--border);
-}
-
-.msg-bubble {
-  padding: 11px 15px;
-  border-radius: var(--radius);
-  border: 1px solid;
-  font-size: 0.88rem;
-  line-height: 1.65;
-  max-width: min(640px, 100%);
-  word-break: break-word;
-}
-
-.message.user .msg-bubble {
-  background: var(--user-bg);
-  border-color: var(--user-border);
-  border-radius: var(--radius) 4px var(--radius) var(--radius);
-}
-
-.message.assistant .msg-bubble {
-  background: var(--asst-bg);
-  border-color: var(--asst-border);
-  border-radius: 4px var(--radius) var(--radius) var(--radius);
-}
-
-.msg-bubble p { margin-bottom: 0.4em; }
-.msg-bubble p:last-child { margin-bottom: 0; }
-.msg-bubble ul, .msg-bubble ol { padding-left: 1.4em; margin: 0.3em 0; }
-.msg-bubble li { margin-bottom: 0.2em; }
-.msg-bubble strong { font-weight: 600; color: var(--text); }
-.msg-bubble em { color: var(--text-soft); }
-.msg-bubble code {
-  font-family: 'SF Mono', Consolas, monospace;
-  font-size: 0.82em;
-  background: var(--surface-2);
-  padding: 1px 5px;
-  border-radius: 3px;
-}
-
-.cursor {
-  display: inline-block;
-  width: 2px; height: 1em;
-  background: var(--green);
-  margin-left: 2px;
-  vertical-align: text-bottom;
-  animation: blink 1s step-end infinite;
-}
-@keyframes blink { 50% { opacity: 0; } }
-
-.error-bubble {
-  font-size: 0.82rem;
-  color: var(--red);
-  background: var(--red-dim);
-  border: 1px solid #5a1010;
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  align-self: center;
-}
-
-/* ── Input Bar ───────────────────────────────────────────── */
-.input-bar {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  padding: 12px 18px 14px;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.chat-input {
-  flex: 1;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 0.88rem;
-  line-height: 1.5;
-  padding: 9px 13px;
-  resize: none;
-  min-height: 40px;
-  max-height: 140px;
-  outline: none;
-  transition: border-color var(--transition);
-  overflow-y: auto;
-}
-
-.chat-input:focus { border-color: var(--green-glow); }
-.chat-input::placeholder { color: var(--text-dim); }
-
-.chat-input::-webkit-scrollbar { width: 4px; }
-.chat-input::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-/* ── Mic Button ──────────────────────────────────────────── */
-.mic-btn {
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--text-soft);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition);
+/* ── Orb ─────────────────────────────────────────────────── */
+#orb-wrap {
   position: relative;
+  width: 240px;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
-.mic-btn:hover:not(:disabled) {
-  border-color: var(--text-soft);
-  color: var(--text);
-}
-
-.mic-btn.recording {
-  background: var(--red-dim);
-  border-color: var(--red);
-  color: var(--red);
-  box-shadow: 0 0 0 0 rgba(248,81,73,0.4);
-  animation: pulse-ring 1.4s ease-out infinite;
-}
-
-.mic-btn.processing {
-  background: var(--amber-dim);
-  border-color: var(--amber);
-  color: var(--amber);
-  cursor: default;
-}
-
-.mic-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-@keyframes pulse-ring {
-  0%   { box-shadow: 0 0 0 0    rgba(248,81,73,0.5); }
-  70%  { box-shadow: 0 0 0 10px rgba(248,81,73,0); }
-  100% { box-shadow: 0 0 0 0    rgba(248,81,73,0); }
-}
-
-/* Recording timer badge */
-.rec-timer {
+/* Expanding rings */
+.ring {
   position: absolute;
-  top: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--red);
-  white-space: nowrap;
+  border-radius: 50%;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.2s;
+  border: 1px solid rgba(34,211,167,0.22);
 }
-.mic-btn.recording .rec-timer { opacity: 1; }
+.r1 { width: 260px; height: 260px; }
+.r2 { width: 300px; height: 300px; }
+.r3 { width: 340px; height: 340px; }
 
-/* ── Send Button ─────────────────────────────────────────── */
-.send-btn {
+#orb-wrap.listening .r1 { animation: ring-out 2s ease-out infinite; }
+#orb-wrap.listening .r2 { animation: ring-out 2s ease-out .65s infinite; }
+#orb-wrap.listening .r3 { animation: ring-out 2s ease-out 1.3s infinite; }
+
+#orb-wrap.speaking .r1 { animation: ring-out 2.8s ease-out infinite; }
+#orb-wrap.speaking .r2 { animation: ring-out 2.8s ease-out .9s infinite; }
+
+@keyframes ring-out {
+  0%   { transform: scale(.88); opacity: .5; }
+  100% { transform: scale(1.12); opacity: 0; }
+}
+
+/* Orb sphere */
+#orb {
+  width: 210px;
+  height: 210px;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  background: #040e09;
+  box-shadow:
+    0 0 40px rgba(34,211,167,.1),
+    0 0 80px rgba(34,211,167,.05);
+  transition: box-shadow .4s ease;
+  will-change: transform, box-shadow;
+}
+
+/* Rotating swirl — the "lava lamp" effect */
+#orb .swirl {
+  position: absolute;
+  width: 200%; height: 200%;
+  top: -50%; left: -50%;
+  border-radius: 42%;  /* oval → organic rotation */
+  animation: swirl-idle 12s linear infinite;
+  mix-blend-mode: screen;
+  opacity: .6;
+  will-change: transform;
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(34,211,167, .90)  0deg,
+    rgba(13,148,136, .65)  80deg,
+    rgba(6, 95,  70, .40) 160deg,
+    rgba(3,  12,   8, .15) 250deg,
+    rgba(34,211,167, .90) 360deg
+  );
+}
+
+/* Sphere light — gives 3D depth */
+#orb .shine {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,.17) 0%, transparent 42%),
+    radial-gradient(circle at 58% 62%, rgba(34,211,167,.18) 0%, transparent 38%),
+    radial-gradient(circle at 50% 50%, transparent 42%, rgba(0,0,0,.55) 100%);
+  pointer-events: none;
+}
+
+/* ── Orb state animations ─────────────────────────────────── */
+@keyframes swirl-idle   { to { transform: rotate(360deg); } }
+@keyframes swirl-fast   { to { transform: rotate(360deg); } }
+
+/* IDLE: slow breathing */
+#orb-wrap.idle #orb {
+  animation: breathe 4.5s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.045); }
+}
+
+/* LISTENING: JS drives the scale/glow; swirl speeds up */
+#orb-wrap.listening #orb { animation: none; }
+#orb-wrap.listening .swirl { animation: swirl-fast 3.5s linear infinite; opacity: .8; }
+
+/* PROCESSING: blue hue, pulsing scale */
+#orb-wrap.processing #orb {
+  animation: proc-pulse 1.6s ease-in-out infinite;
+  box-shadow: 0 0 45px rgba(96,165,250,.28), 0 0 90px rgba(96,165,250,.12);
+}
+#orb-wrap.processing .swirl {
+  animation: swirl-fast 2.5s linear infinite;
+  background: conic-gradient(
+    from 0deg,
+    rgba(96,165,250,.85) 0deg,
+    rgba(34,211,167,.55) 100deg,
+    rgba(96,165,250,.35) 210deg,
+    rgba(34,211,167,.6)  290deg,
+    rgba(96,165,250,.85) 360deg
+  );
+}
+@keyframes proc-pulse {
+  0%, 100% { transform: scale(.97); }
+  50%       { transform: scale(1.03); }
+}
+
+/* SPEAKING: amber warmth, rhythmic pulse */
+#orb-wrap.speaking #orb {
+  animation: speak-pulse .95s ease-in-out infinite;
+  box-shadow: 0 0 50px rgba(245,158,11,.22), 0 0 100px rgba(245,158,11,.09);
+}
+#orb-wrap.speaking .swirl {
+  animation: swirl-fast 5s linear infinite;
+  background: conic-gradient(
+    from 0deg,
+    rgba(245,158,11,.8)  0deg,
+    rgba(34,211,167,.55) 100deg,
+    rgba(245,158,11,.45) 200deg,
+    rgba(34,211,167,.7)  290deg,
+    rgba(245,158,11,.8)  360deg
+  );
+}
+@keyframes speak-pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.07); }
+}
+
+/* ── Status label ─────────────────────────────────────────── */
+#status {
+  font-size: 0.75rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--text-soft);
+  text-align: center;
+  transition: color .3s;
+}
+#orb-wrap.listening ~ #status  { color: var(--teal); }
+#orb-wrap.processing ~ #status { color: var(--blue); }
+#orb-wrap.speaking ~ #status   { color: var(--amber); }
+
+/* ── Text mode ───────────────────────────────────────────── */
+#text-mode-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 480px;
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease;
+}
+#text-mode-area.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+#text-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: .88rem;
+  padding: 10px 18px;
+  outline: none;
+  transition: border-color .2s;
+  user-select: text;
+}
+#text-input:focus { border-color: rgba(34,211,167,.5); }
+#text-input::placeholder { color: var(--text-dim); }
+
+#send-btn {
   width: 40px; height: 40px;
   border-radius: 50%;
-  border: 1px solid var(--green-glow);
-  background: var(--green-dim);
-  color: var(--green);
+  background: rgba(34,211,167,.15);
+  border: 1px solid rgba(34,211,167,.35);
+  color: var(--teal);
   cursor: pointer;
+  font-size: .95rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+#send-btn:hover { background: rgba(34,211,167,.28); }
+
+/* ── Footer ──────────────────────────────────────────────── */
+footer {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 12px;
+  padding: 16px 20px 22px;
   flex-shrink: 0;
-  transition: background var(--transition), box-shadow var(--transition);
-}
-.send-btn:hover:not(:disabled) {
-  background: var(--green-glow);
-  color: #fff;
-  box-shadow: 0 0 8px rgba(35,134,54,0.4);
-}
-.send-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-.send-btn .spinner {
-  width: 16px; height: 16px;
-  border: 2px solid rgba(63,185,80,0.3);
-  border-top-color: var(--green);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── Responsive ──────────────────────────────────────────── */
-@media (max-width: 720px) {
-  main { grid-template-columns: 1fr; }
-  aside { display: none; }
 }
 </style>
 </head>
 <body>
 
-<!-- ── Header ──────────────────────────────────────────────── -->
+<!-- Header -->
 <header>
-  <div class="logo">
-    <span class="logo-icon">🏔</span>
-    Wilderness Med Chat
-  </div>
+  <div class="logo">Wilderness Medicine Assistant</div>
   <div class="header-right">
-    <div class="status-pill">
+    <div class="pill" id="status-pill">
       <div id="status-dot" class="status-dot"></div>
-      <span id="status-text">Connecting…</span>
-      <span id="rag-warn" class="rag-warning" title="No knowledge base found. Answers use model knowledge only.">· No KB</span>
+      <span id="status-text">Connecting</span>
     </div>
-    <button class="reset-btn" id="reset-btn" title="Clear session and start a new patient assessment">
-      ↺ New Patient
-    </button>
+    <div class="pill" id="assessment-btn">Assessment</div>
+    <div class="pill active" id="audio-btn">🔊 On</div>
   </div>
 </header>
 
-<!-- ── Main Layout ──────────────────────────────────────────── -->
+<!-- Patient Assessment Panel (floating) -->
+<div id="patient-panel">
+  <div class="panel-section-title">Patient Assessment</div>
+  <div id="panel-step" style="color: #d29922">◎ Scene Size-up</div>
+  <div id="panel-fields"></div>
+  <div id="panel-concerns"></div>
+</div>
+
+<!-- Main -->
 <main>
 
-  <!-- Sidebar: Patient Assessment State -->
-  <aside>
-    <div class="sidebar-header">Assessment</div>
-    <div class="sidebar-body" id="sidebar-body">
-      <div class="pas-badge scene" id="pas-badge">◎ Scene Size-up</div>
-      <p class="empty-state" id="empty-state">
-        No patient data yet.<br>
-        Describe the situation to begin.
-      </p>
-      <div id="state-fields"></div>
-      <div id="problems-section" class="problems-section" style="display:none">
-        <span class="problems-title">⚠ Active Concerns</span>
-        <div id="problem-chips"></div>
-      </div>
+  <!-- Text above orb -->
+  <div id="text-area">
+    <p id="user-label"></p>
+    <div id="response-text"></div>
+  </div>
+
+  <!-- The orb -->
+  <div id="orb-wrap" class="idle">
+    <div class="ring r1"></div>
+    <div class="ring r2"></div>
+    <div class="ring r3"></div>
+    <div id="orb">
+      <div class="swirl"></div>
+      <div class="shine"></div>
     </div>
-  </aside>
+  </div>
 
-  <!-- Chat Area -->
-  <section class="chat-section">
-    <div class="messages" id="messages">
-      <div class="message assistant">
-        <div class="msg-avatar">+</div>
-        <div class="msg-bubble">
-          <p><strong>Wilderness Med Chat ready.</strong></p>
-          <p>Describe the patient and situation to begin the assessment. You can type or use the mic button to speak.</p>
-        </div>
-      </div>
-    </div>
+  <p id="status">Tap to speak</p>
 
-    <!-- Input Bar -->
-    <div class="input-bar">
-      <button class="mic-btn" id="mic-btn" title="Click to record voice">
-        <span class="rec-timer" id="rec-timer">0.0s</span>
-        <!-- Mic icon (idle) -->
-        <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-          <line x1="12" y1="19" x2="12" y2="23"/>
-          <line x1="8" y1="23" x2="16" y2="23"/>
-        </svg>
-        <!-- Stop icon (recording) -->
-        <svg id="stop-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-             fill="currentColor" style="display:none">
-          <rect x="4" y="4" width="16" height="16" rx="2"/>
-        </svg>
-        <!-- Spinner (processing) -->
-        <div id="mic-spinner" class="spinner" style="display:none"></div>
-      </button>
-
-      <textarea
-        id="chat-input"
-        class="chat-input"
-        placeholder="Describe the patient or situation…"
-        rows="1"
-        autocomplete="off"
-        spellcheck="true"
-      ></textarea>
-
-      <button class="send-btn" id="send-btn" title="Send message">
-        <svg id="send-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
-             fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"/>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-        </svg>
-        <div id="send-spinner" class="spinner" style="display:none"></div>
-      </button>
-    </div>
-  </section>
+  <!-- Text mode input -->
+  <div id="text-mode-area">
+    <input id="text-input" type="text" placeholder="Type your message…" autocomplete="off" spellcheck="true">
+    <button id="send-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
 
 </main>
 
-<script>
-/* ─────────────────────────────────────────────────────────────
-   State
-───────────────────────────────────────────────────────────── */
-const $ = id => document.getElementById(id)
-let isSending   = false
-let isRecording = false
-let mediaRecorder = null
-let audioChunks  = []
-let recTimerInterval = null
-let recStartTime = 0
-let voiceAvailable = null  // null = untested, true/false after first attempt
+<!-- Footer -->
+<footer>
+  <div class="pill" id="keyboard-btn">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="2" y="6" width="20" height="12" rx="2"/>
+      <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/>
+    </svg>
+    Type
+  </div>
+  <div class="pill" id="reset-btn">↺ New Patient</div>
+</footer>
 
-/* ─────────────────────────────────────────────────────────────
-   Health
-───────────────────────────────────────────────────────────── */
-async function checkHealth() {
-  try {
-    const res = await fetch('/health')
-    const data = await res.json()
-    const dot  = $('status-dot')
-    const txt  = $('status-text')
-    const warn = $('rag-warn')
-    if (data.ollama) {
-      dot.className = 'status-dot online'
-      txt.textContent = 'Ready'
-    } else {
-      dot.className = 'status-dot error'
-      txt.textContent = 'Ollama offline'
-    }
-    warn.classList.toggle('visible', data.ollama && !data.rag)
-  } catch {
-    $('status-dot').className = 'status-dot error'
-    $('status-text').textContent = 'Server offline'
+<script>
+/* ─── App state ────────────────────────────────────────────── */
+let orbState   = 'idle'    // idle | listening | processing | speaking
+let textMode   = false
+let ttsOn      = true
+let isSending  = false     // guards against duplicate concurrent sends
+
+let mediaRecorder  = null
+let audioChunks    = []
+let analyserNode   = null
+let vizFrameId     = null
+let micAudioCtx    = null
+
+const orbWrap      = document.getElementById('orb-wrap')
+const orb          = document.getElementById('orb')
+const statusEl     = document.getElementById('status')
+const responseText = document.getElementById('response-text')
+const userLabel    = document.getElementById('user-label')
+const textModeArea = document.getElementById('text-mode-area')
+const textInput    = document.getElementById('text-input')
+
+const STATE_LABELS = {
+  idle:       'Tap to speak',
+  listening:  'Listening…',
+  processing: 'Thinking…',
+  speaking:   'Speaking…',
+}
+
+/* ─── Set orb state ────────────────────────────────────────── */
+function setOrbState(s) {
+  orbState = s
+  orbWrap.className = s
+  statusEl.textContent = STATE_LABELS[s] || s
+  // Reset JS-driven overrides when leaving listening state
+  if (s !== 'listening') {
+    orb.style.transform  = ''
+    orb.style.boxShadow  = ''
   }
 }
 
+/* ─── Health check ─────────────────────────────────────────── */
+async function checkHealth() {
+  try {
+    const { ollama } = await fetch('/health').then(r => r.json())
+    const dot = document.getElementById('status-dot')
+    const txt = document.getElementById('status-text')
+    dot.className = 'status-dot ' + (ollama ? 'online' : 'error')
+    txt.textContent = ollama ? 'Ready' : 'Offline'
+  } catch {
+    document.getElementById('status-dot').className = 'status-dot error'
+    document.getElementById('status-text').textContent = 'Offline'
+  }
+}
 checkHealth()
 setInterval(checkHealth, 15000)
 
-/* ─────────────────────────────────────────────────────────────
-   Patient State Sidebar
-───────────────────────────────────────────────────────────── */
+/* ─── Patient assessment panel ─────────────────────────────── */
 const FIELD_DEFS = [
-  { key: 'mental_status',    icon: '🧠', label: 'Mental Status',
-    critical: ['unresponsive'], warning: ['altered or confused', 'responds to pain'] },
-  { key: 'airway',           icon: '🫁', label: 'Airway',
-    critical: ['threatened'], ok: ['clear'] },
-  { key: 'breathing',        icon: '💨', label: 'Breathing',
-    critical: ['absent'], ok: ['present'] },
-  { key: 'major_bleeding',   icon: '🩸', label: 'Major Bleeding',
-    critical: ['present'], ok: ['absent'] },
-  { key: 'spine_concern',    icon: '🦴', label: 'Spine Concern',
-    critical: ['yes'], warning: ['possible'] },
-  { key: 'chief_complaint',  icon: '🤕', label: 'Chief Complaint', critical: [] },
-  { key: 'mechanism',        icon: '⚡', label: 'Mechanism',       critical: [] },
-  { key: 'nature_of_illness',icon: '🦠', label: 'Nature of Illness',critical: [] },
+  { key: 'mental_status',   icon: '🧠', label: 'Mental',
+    crit: ['unresponsive'], warn: ['altered', 'confused'] },
+  { key: 'airway',          icon: '🫁', label: 'Airway',
+    crit: ['threatened'], ok: ['clear'] },
+  { key: 'breathing',       icon: '💨', label: 'Breathing',
+    crit: ['absent'], ok: ['present'] },
+  { key: 'major_bleeding',  icon: '🩸', label: 'Bleeding',
+    crit: ['present'], ok: ['absent'] },
+  { key: 'spine_concern',   icon: '🦴', label: 'Spine',
+    crit: ['yes'], warn: ['possible'] },
+  { key: 'chief_complaint', icon: '🤕', label: 'Complaint', crit: [] },
+  { key: 'mechanism',       icon: '⚡', label: 'MOI',        crit: [] },
 ]
 
-function getValueClass(def, val) {
-  if (!val) return ''
+function valColor(def, val) {
   const v = val.toLowerCase()
-  if (def.critical && def.critical.some(c => v.includes(c))) return 'critical'
-  if (def.warning  && def.warning .some(c => v.includes(c))) return 'warning'
-  if (def.ok       && def.ok      .some(c => v.includes(c))) return 'ok'
-  return ''
+  if (def.crit?.some(c => v.includes(c))) return '#f85149'
+  if (def.warn?.some(c => v.includes(c))) return '#d29922'
+  if (def.ok?.some(c => v.includes(c)))   return '#3fb950'
+  return '#7a9a8e'
 }
 
-function renderPatientState(state) {
-  const badge = $('pas-badge')
-  const step  = (state.current_pas_step || 'scene size up').toLowerCase()
+function updateAssessmentPanel(state) {
+  const step = (state.current_pas_step || '').toLowerCase()
+  const stepEl = document.getElementById('panel-step')
   if (step.includes('primary')) {
-    badge.className = 'pas-badge primary'
-    badge.textContent = '⚠ Primary Survey'
-  } else if (step.includes('sample') || step.includes('history') || step.includes('vital')) {
-    badge.className = 'pas-badge done'
-    badge.textContent = '✓ ' + capitalize(step)
+    stepEl.textContent = '⚠ Primary Survey'
+    stepEl.style.color = '#e07330'
   } else {
-    badge.className = 'pas-badge scene'
-    badge.textContent = '◎ Scene Size-up'
+    stepEl.textContent = '◎ Scene Size-up'
+    stepEl.style.color = '#d29922'
   }
 
-  const fieldsEl = $('state-fields')
   const known = FIELD_DEFS.filter(d => state[d.key])
+  document.getElementById('panel-fields').innerHTML = known.map(d => `
+    <div class="panel-field">
+      <span class="panel-field-icon">${d.icon}</span>
+      <span class="panel-field-label">${d.label}</span>
+      <span class="panel-field-val" style="color:${valColor(d, state[d.key])}">${esc(state[d.key])}</span>
+    </div>`).join('')
 
-  $('empty-state').style.display = known.length === 0 ? 'block' : 'none'
-
-  fieldsEl.innerHTML = known.map(def => {
-    const val = state[def.key]
-    const cls = getValueClass(def, val)
-    return `<div class="state-field">
-      <span class="field-icon">${def.icon}</span>
-      <div class="field-text">
-        <span class="field-label">${def.label}</span>
-        <span class="field-value ${cls}">${esc(val)}</span>
-      </div>
-    </div>`
-  }).join('')
-
-  const problems = state.active_problem_list || []
-  const probSection = $('problems-section')
-  if (problems.length > 0) {
-    probSection.style.display = 'flex'
-    $('problem-chips').innerHTML = problems.map(p => `<div class="problem-chip">${esc(p)}</div>`).join('')
+  const probs = state.active_problem_list || []
+  const concEl = document.getElementById('panel-concerns')
+  if (probs.length) {
+    concEl.innerHTML = `<div class="panel-concerns-title">⚠ Concerns</div>` +
+      probs.map(p => `<span class="panel-chip">${esc(p)}</span>`).join('')
   } else {
-    probSection.style.display = 'none'
+    concEl.innerHTML = ''
   }
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Chat + Streaming
-───────────────────────────────────────────────────────────── */
-function appendMessage(role, html, raw) {
-  const container = $('messages')
-  const div = document.createElement('div')
-  div.className = `message ${role}`
-
-  const avatar = document.createElement('div')
-  avatar.className = 'msg-avatar'
-  avatar.textContent = role === 'user' ? 'You' : '+'
-
-  const bubble = document.createElement('div')
-  bubble.className = 'msg-bubble'
-  if (html !== undefined) bubble.innerHTML = html
-
-  div.appendChild(avatar)
-  div.appendChild(bubble)
-  container.appendChild(div)
-  scrollToBottom()
-  return bubble
-}
-
-function appendError(text) {
-  const container = $('messages')
-  const div = document.createElement('div')
-  div.className = 'error-bubble'
-  div.textContent = text
-  container.appendChild(div)
-  scrollToBottom()
-}
-
-function scrollToBottom() {
-  const c = $('messages')
-  c.scrollTop = c.scrollHeight
-}
-
+/* ─── Send a message ───────────────────────────────────────── */
 async function sendMessage(text) {
   if (!text.trim() || isSending) return
   isSending = true
-  setSendingState(true)
 
-  // User bubble
-  appendMessage('user', `<p>${esc(text)}</p>`)
+  window.speechSynthesis?.cancel()
 
-  // Assistant bubble with cursor
-  const asstBubble = appendMessage('assistant', '<span class="cursor"></span>')
-  let accumulated = ''
+  userLabel.textContent = `"${text}"`
+  userLabel.classList.add('show')
+  responseText.textContent = ''
+  setOrbState('processing')
+
+  let gotDoneEvent = false
 
   try {
     const resp = await fetch('/chat', {
@@ -757,14 +612,15 @@ async function sendMessage(text) {
     })
 
     if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ error: resp.statusText }))
-      asstBubble.innerHTML = `<span style="color:var(--red)">${esc(err.error || 'Request failed')}</span>`
+      responseText.textContent = 'Could not reach the server.'
+      setOrbState('idle')
       return
     }
 
-    const reader = resp.body.getReader()
+    const reader  = resp.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
+    let full   = ''
 
     while (true) {
       const { done, value } = await reader.read()
@@ -772,317 +628,301 @@ async function sendMessage(text) {
 
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n')
-      buffer = lines.pop()  // keep incomplete line
+      buffer = lines.pop()
 
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue
-        let event
-        try { event = JSON.parse(line.slice(6)) } catch { continue }
+        let ev
+        try { ev = JSON.parse(line.slice(6)) } catch { continue }
 
-        if (event.type === 'token') {
-          accumulated += event.content
-          asstBubble.innerHTML = esc(accumulated) + '<span class="cursor"></span>'
-          scrollToBottom()
+        if (ev.type === 'token') {
+          full += ev.content
+          responseText.textContent = full
+          responseText.scrollTop   = responseText.scrollHeight
 
-        } else if (event.type === 'done') {
-          asstBubble.innerHTML = renderMarkdown(accumulated)
-          if (event.patient_state) renderPatientState(event.patient_state)
-          scrollToBottom()
+        } else if (ev.type === 'done') {
+          gotDoneEvent = true
+          if (ev.patient_state) updateAssessmentPanel(ev.patient_state)
+          ttsOn && full.trim() ? speak(full.trim()) : setOrbState('idle')
 
-        } else if (event.type === 'error') {
-          asstBubble.innerHTML = `<span style="color:var(--red)">Error: ${esc(event.message)}</span>`
+        } else if (ev.type === 'error') {
+          gotDoneEvent = true
+          responseText.textContent = ev.message
+          setOrbState('idle')
         }
       }
     }
 
-    // Flush remaining buffer
-    if (buffer.startsWith('data: ')) {
-      try {
-        const event = JSON.parse(buffer.slice(6))
-        if (event.type === 'done') {
-          asstBubble.innerHTML = renderMarkdown(accumulated)
-          if (event.patient_state) renderPatientState(event.patient_state)
-        }
-      } catch { /* ignore */ }
-    }
-
-    // Ensure cursor is gone
-    if (asstBubble.innerHTML.includes('class="cursor"')) {
-      asstBubble.innerHTML = renderMarkdown(accumulated)
+    // Stream closed — if the server never sent a 'done' event, reset manually
+    if (!gotDoneEvent) {
+      ttsOn && full.trim() ? speak(full.trim()) : setOrbState('idle')
     }
 
   } catch (err) {
-    asstBubble.innerHTML = `<span style="color:var(--red)">Connection error: ${esc(err.message)}</span>`
+    if (err.name !== 'AbortError') responseText.textContent = 'Connection error.'
+    setOrbState('idle')
   } finally {
     isSending = false
-    setSendingState(false)
-    $('chat-input').focus()
   }
 }
 
-function setSendingState(sending) {
-  const btn   = $('send-btn')
-  const input = $('chat-input')
-  btn.disabled   = sending
-  input.disabled = sending
-  $('send-icon').style.display    = sending ? 'none' : ''
-  $('send-spinner').style.display = sending ? '' : 'none'
+/* ─── Browser TTS ──────────────────────────────────────────── */
+function speak(text) {
+  try {
+    if (!window.speechSynthesis) { setOrbState('idle'); return }
+    setOrbState('speaking')
+
+    const utt = new SpeechSynthesisUtterance(text)
+    utt.rate  = 1.05
+    utt.pitch = 1.0
+
+    const voices   = window.speechSynthesis.getVoices()
+    const preferred = voices.find(v =>
+      /Samantha|Ava|Google US|Natural/.test(v.name)
+    ) || voices.find(v => v.lang.startsWith('en')) || voices[0]
+    if (preferred) utt.voice = preferred
+
+    // Guard: only call setOrbState('idle') once
+    let finished = false
+    const finish = () => { if (!finished) { finished = true; setOrbState('idle') } }
+
+    utt.onend   = finish
+    utt.onerror = finish
+
+    // Safety net: estimate duration (≈2.5 words/sec) + 8 s buffer
+    // Prevents the orb from getting permanently stuck if onend never fires
+    const words       = text.trim().split(/\s+/).length
+    const safetyMs    = Math.max(6000, (words / 2.5) * 1000 + 8000)
+    const safetyTimer = setTimeout(finish, safetyMs)
+
+    // Clear timer early if TTS completes normally
+    const origFinish = finish
+    utt.onend = () => { clearTimeout(safetyTimer); origFinish() }
+
+    window.speechSynthesis.speak(utt)
+  } catch {
+    setOrbState('idle')
+  }
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Voice Recording
-───────────────────────────────────────────────────────────── */
+/* ─── Voice recording ──────────────────────────────────────── */
 async function startRecording() {
+  if (orbState !== 'idle') return
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    audioChunks = []
-    mediaRecorder = new MediaRecorder(stream)
+
+    // Wire up the real-time amplitude visualizer
+    micAudioCtx = new AudioContext()
+    const src  = micAudioCtx.createMediaStreamSource(stream)
+    analyserNode = micAudioCtx.createAnalyser()
+    analyserNode.fftSize = 256
+    src.connect(analyserNode)
+    startAmplitudeViz()
+
+    audioChunks    = []
+    mediaRecorder  = new MediaRecorder(stream)
     mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data) }
-    mediaRecorder.onstop = handleRecordingStop
+    mediaRecorder.onstop = onRecordingStop
     mediaRecorder.start(100)
-    isRecording = true
 
-    // Update UI
-    const btn = $('mic-btn')
-    btn.classList.add('recording')
-    $('mic-icon').style.display  = 'none'
-    $('stop-icon').style.display = ''
+    setOrbState('listening')
+    // Safety auto-stop at 30s
+    setTimeout(() => { if (orbState === 'listening') stopRecording() }, 30000)
 
-    // Timer
-    recStartTime = Date.now()
-    recTimerInterval = setInterval(() => {
-      const secs = ((Date.now() - recStartTime) / 1000).toFixed(1)
-      $('rec-timer').textContent = secs + 's'
-      // Auto-stop at 30s
-      if (parseFloat(secs) >= 30) stopRecording()
-    }, 100)
-
-  } catch (err) {
-    voiceAvailable = false
-    appendError('Microphone access denied or unavailable. Please use text input.')
+  } catch {
+    showHint('Microphone access denied — use Text mode below.')
   }
 }
 
 function stopRecording() {
-  if (!mediaRecorder || mediaRecorder.state === 'inactive') return
+  if (orbState !== 'listening' || !mediaRecorder) return
+  stopAmplitudeViz()
   mediaRecorder.stop()
   mediaRecorder.stream.getTracks().forEach(t => t.stop())
-  clearInterval(recTimerInterval)
-  isRecording = false
-
-  const btn = $('mic-btn')
-  btn.classList.remove('recording')
-  btn.classList.add('processing')
-  $('stop-icon').style.display   = 'none'
-  $('mic-spinner').style.display = ''
-  $('mic-icon').style.display    = 'none'
+  micAudioCtx?.close()
+  setOrbState('processing')
 }
 
-async function handleRecordingStop() {
+async function onRecordingStop() {
   const blob = new Blob(audioChunks, { type: audioChunks[0]?.type || 'audio/webm' })
-
   try {
-    // Decode and resample to 16 kHz mono float32 for Whisper
-    const arrayBuffer = await blob.arrayBuffer()
-    const audioCtx  = new AudioContext()
-    const decoded   = await audioCtx.decodeAudioData(arrayBuffer)
-    await audioCtx.close()
+    // Decode → resample to 16 kHz mono float32 for Whisper
+    const ab      = await blob.arrayBuffer()
+    const decCtx  = new AudioContext()
+    const decoded = await decCtx.decodeAudioData(ab)
+    await decCtx.close()
 
-    const targetRate  = 16000
-    const duration    = decoded.duration
-    const frameCount  = Math.ceil(duration * targetRate)
-    const offlineCtx  = new OfflineAudioContext(1, frameCount, targetRate)
-    const source      = offlineCtx.createBufferSource()
-    source.buffer     = decoded
-    source.connect(offlineCtx.destination)
-    source.start(0)
-    const resampled   = await offlineCtx.startRendering()
-    const pcm         = resampled.getChannelData(0)  // Float32Array, 16 kHz mono
+    const targetHz = 16000
+    const offCtx   = new OfflineAudioContext(1, Math.ceil(decoded.duration * targetHz), targetHz)
+    const src      = offCtx.createBufferSource()
+    src.buffer     = decoded
+    src.connect(offCtx.destination)
+    src.start(0)
+    const pcm = (await offCtx.startRendering()).getChannelData(0)
 
-    // Send to backend
-    const resp = await fetch('/transcribe', {
-      method: 'POST',
+    const resp    = await fetch('/transcribe', {
+      method:  'POST',
       headers: { 'Content-Type': 'application/octet-stream' },
-      body: pcm.buffer,
+      body:    pcm.buffer,
     })
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}))
-      throw new Error(err.error || `HTTP ${resp.status}`)
-    }
-
     const { text, error } = await resp.json()
-
     if (error) throw new Error(error)
 
-    if (text && text.trim()) {
-      voiceAvailable = true
-      // Auto-send the transcription
+    if (text?.trim()) {
       await sendMessage(text.trim())
     } else {
-      appendError("Didn't catch anything — try speaking more clearly or use text.")
+      showHint("Didn't catch that — try again or use Text mode.")
+      setOrbState('idle')
     }
-
   } catch (err) {
-    appendError(`Voice transcription error: ${err.message}`)
-  } finally {
-    // Reset mic button
-    const btn = $('mic-btn')
-    btn.classList.remove('processing')
-    $('mic-spinner').style.display = 'none'
-    $('mic-icon').style.display    = ''
-    $('rec-timer').textContent     = '0.0s'
+    showHint('Voice error: ' + err.message)
+    setOrbState('idle')
   }
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Reset
-───────────────────────────────────────────────────────────── */
+/* ─── Real-time amplitude → orb scale ─────────────────────── */
+function startAmplitudeViz() {
+  const buf = new Uint8Array(analyserNode.frequencyBinCount)
+  function frame() {
+    vizFrameId = requestAnimationFrame(frame)
+    analyserNode.getByteTimeDomainData(buf)
+    let sum = 0
+    for (let i = 0; i < buf.length; i++) { const v = (buf[i] / 128) - 1; sum += v * v }
+    const amp   = Math.min(1, Math.sqrt(sum / buf.length) * 10)
+    const scale = 1 + amp * 0.28
+    const glow  = 50  + amp * 60
+    const alpha = .22 + amp * .50
+    orb.style.transform = `scale(${scale.toFixed(3)})`
+    orb.style.boxShadow =
+      `0 0 ${glow}px rgba(34,211,167,${alpha.toFixed(2)}),` +
+      `0 0 ${glow * 1.8}px rgba(34,211,167,${(alpha * .38).toFixed(2)})`
+  }
+  frame()
+}
+
+function stopAmplitudeViz() {
+  if (vizFrameId) cancelAnimationFrame(vizFrameId)
+  vizFrameId = null
+}
+
+/* ─── Transient hint text ──────────────────────────────────── */
+let hintTimer = null
+function showHint(msg) {
+  responseText.textContent = msg
+  clearTimeout(hintTimer)
+  hintTimer = setTimeout(() => { responseText.textContent = '' }, 4000)
+}
+
+/* ─── Reset ────────────────────────────────────────────────── */
 async function resetSession() {
+  window.speechSynthesis?.cancel()
+  stopAmplitudeViz()
+  if (mediaRecorder && orbState === 'listening') {
+    mediaRecorder.stop()
+    mediaRecorder.stream.getTracks().forEach(t => t.stop())
+  }
   await fetch('/reset', { method: 'POST' })
-
-  // Clear messages
-  const messages = $('messages')
-  messages.innerHTML = `
-    <div class="message assistant">
-      <div class="msg-avatar">+</div>
-      <div class="msg-bubble">
-        <p><strong>New patient assessment started.</strong></p>
-        <p>Describe the patient and situation to begin.</p>
-      </div>
-    </div>`
-
-  // Reset sidebar
-  $('state-fields').innerHTML = ''
-  $('problems-section').style.display = 'none'
-  $('empty-state').style.display = 'block'
-  $('pas-badge').className = 'pas-badge scene'
-  $('pas-badge').textContent = '◎ Scene Size-up'
-
-  $('chat-input').focus()
+  responseText.textContent = ''
+  userLabel.textContent    = ''
+  userLabel.classList.remove('show')
+  document.getElementById('panel-fields').innerHTML   = ''
+  document.getElementById('panel-concerns').innerHTML = ''
+  document.getElementById('panel-step').textContent   = '◎ Scene Size-up'
+  document.getElementById('panel-step').style.color   = '#d29922'
+  setOrbState('idle')
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Markdown Renderer (minimal, no external deps)
-───────────────────────────────────────────────────────────── */
-function renderMarkdown(text) {
-  const lines = text.split('\n')
-  const out = []
-  let listType = null
-
-  function closeList() {
-    if (listType) { out.push(`</${listType}>`); listType = null }
-  }
-
-  function inlineFmt(s) {
-    return s
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g,'<em>$1</em>')
-      .replace(/`([^`]+)`/g,'<code>$1</code>')
-  }
-
-  for (const line of lines) {
-    const ul = line.match(/^[-*•]\s+(.+)/)
-    const ol = line.match(/^\d+[.)]\s+(.+)/)
-    const h3 = line.match(/^###\s+(.+)/)
-    const h2 = line.match(/^##\s+(.+)/)
-    const hr = line.match(/^---+$/)
-
-    if (ul) {
-      if (listType !== 'ul') { closeList(); out.push('<ul>'); listType = 'ul' }
-      out.push(`<li>${inlineFmt(ul[1])}</li>`)
-    } else if (ol) {
-      if (listType !== 'ol') { closeList(); out.push('<ol>'); listType = 'ol' }
-      out.push(`<li>${inlineFmt(ol[1])}</li>`)
-    } else if (h3) {
-      closeList()
-      out.push(`<p><strong>${inlineFmt(h3[1])}</strong></p>`)
-    } else if (h2) {
-      closeList()
-      out.push(`<p><strong>${inlineFmt(h2[1])}</strong></p>`)
-    } else if (hr) {
-      closeList()
-      out.push('<hr style="border:none;border-top:1px solid var(--border);margin:6px 0">')
-    } else if (!line.trim()) {
-      closeList()
-    } else {
-      closeList()
-      out.push(`<p>${inlineFmt(line)}</p>`)
-    }
-  }
-  closeList()
-  return out.join('')
-}
-
-/* ─────────────────────────────────────────────────────────────
-   Utilities
-───────────────────────────────────────────────────────────── */
+/* ─── Utilities ────────────────────────────────────────────── */
 function esc(s) {
-  if (!s) return ''
-  return String(s)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
+  return String(s || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
 
-function capitalize(s) {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
+/* ─── Event listeners ──────────────────────────────────────── */
 
-/* Auto-resize textarea */
-function autoResize(el) {
-  el.style.height = 'auto'
-  el.style.height = Math.min(el.scrollHeight, 140) + 'px'
-}
-
-/* ─────────────────────────────────────────────────────────────
-   Event Listeners
-───────────────────────────────────────────────────────────── */
-const input = $('chat-input')
-
-input.addEventListener('input', () => autoResize(input))
-
-input.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    const text = input.value.trim()
-    if (!text) return
-    input.value = ''
-    autoResize(input)
-    sendMessage(text)
+// Orb tap: speak / stop / interrupt
+orbWrap.addEventListener('click', () => {
+  if (textMode) return
+  if      (orbState === 'idle')       startRecording()
+  else if (orbState === 'listening')  stopRecording()
+  else if (orbState === 'speaking')   { window.speechSynthesis?.cancel(); setOrbState('idle') }
+  else if (orbState === 'processing') {
+    // Tap to cancel a hung request
+    isSending = false
+    setOrbState('idle')
+    responseText.textContent = ''
   }
 })
 
-$('send-btn').addEventListener('click', () => {
-  const text = input.value.trim()
-  if (!text) return
-  input.value = ''
-  autoResize(input)
-  sendMessage(text)
-})
-
-$('mic-btn').addEventListener('click', () => {
-  if (isSending) return
-  if (isRecording) {
-    stopRecording()
-  } else {
-    startRecording()
+// Keyboard / text mode toggle
+document.getElementById('keyboard-btn').addEventListener('click', () => {
+  textMode = !textMode
+  document.getElementById('keyboard-btn').classList.toggle('active', textMode)
+  textModeArea.classList.toggle('open', textMode)
+  if (textMode) {
+    textInput.focus()
+    if (orbState === 'listening') stopRecording()
   }
 })
 
-$('reset-btn').addEventListener('click', () => {
-  if (confirm('Start a new patient assessment? This will clear the current conversation.')) {
-    resetSession()
+// Text mode send
+document.getElementById('send-btn').addEventListener('click', () => {
+  const v = textInput.value.trim()
+  if (!v) return
+  textInput.value = ''
+  sendMessage(v)
+})
+textInput.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return
+  e.preventDefault()
+  const v = textInput.value.trim()
+  if (!v) return
+  textInput.value = ''
+  sendMessage(v)
+})
+
+// Assessment panel toggle
+document.getElementById('assessment-btn').addEventListener('click', () => {
+  document.getElementById('patient-panel').classList.toggle('open')
+  document.getElementById('assessment-btn').classList.toggle('active',
+    document.getElementById('patient-panel').classList.contains('open'))
+})
+
+// Audio/TTS toggle
+document.getElementById('audio-btn').addEventListener('click', () => {
+  ttsOn = !ttsOn
+  const btn = document.getElementById('audio-btn')
+  btn.textContent = ttsOn ? '🔊 On' : '🔇 Off'
+  btn.classList.toggle('active', ttsOn)
+  if (!ttsOn && orbState === 'speaking') {
+    window.speechSynthesis?.cancel()
+    setOrbState('idle')
   }
 })
 
-// Initial focus
-input.focus()
+// Reset
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (confirm('Start a new patient assessment?')) resetSession()
+})
 
-// Load initial patient state
-fetch('/patient-state').then(r => r.json()).then(renderPatientState).catch(() => {})
+// Close assessment panel when clicking outside
+document.addEventListener('click', e => {
+  const panel = document.getElementById('patient-panel')
+  const btn   = document.getElementById('assessment-btn')
+  if (panel.classList.contains('open') && !panel.contains(e.target) && !btn.contains(e.target)) {
+    panel.classList.remove('open')
+    btn.classList.remove('active')
+  }
+})
+
+// Pre-warm TTS voices
+if (window.speechSynthesis) {
+  window.speechSynthesis.getVoices()
+  window.speechSynthesis.addEventListener('voiceschanged', () => window.speechSynthesis.getVoices())
+}
+
+// Bootstrap patient state
+fetch('/patient-state').then(r => r.json()).then(updateAssessmentPanel).catch(() => {})
 </script>
 </body>
 </html>
