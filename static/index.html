@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wilderness Med Chat</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #0d1117;
+  --surface:     #161b22;
+  --surface-2:   #21262d;
+  --border:      #30363d;
+  --border-soft: #21262d;
+
+  --text:        #e6edf3;
+  --text-soft:   #8b949e;
+  --text-dim:    #484f58;
+
+  --green:       #3fb950;
+  --green-glow:  #238636;
+  --green-dim:   #0d2a1c;
+  --amber:       #d29922;
+  --amber-dim:   #2d1f00;
+  --red:         #f85149;
+  --red-dim:     #2d0a0a;
+  --blue:        #58a6ff;
+
+  --user-bg:     #0d2b1a;
+  --user-border: #238636;
+  --asst-bg:     #161b22;
+  --asst-border: #30363d;
+
+  --radius:      10px;
+  --radius-sm:   6px;
+  --transition:  0.18s ease;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  background: var(--bg);
+  color: var(--text);
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.logo-icon { font-size: 1.3rem; line-height: 1; }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--text-soft);
+}
+
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: background var(--transition), box-shadow var(--transition);
+  flex-shrink: 0;
+}
+.status-dot.online  { background: var(--green); box-shadow: 0 0 5px var(--green-glow); }
+.status-dot.warning { background: var(--amber); }
+.status-dot.error   { background: var(--red); }
+
+.rag-warning {
+  display: none;
+  font-size: 0.72rem;
+  color: var(--amber);
+}
+.rag-warning.visible { display: inline; }
+
+button.reset-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+  white-space: nowrap;
+}
+button.reset-btn:hover {
+  border-color: var(--text-soft);
+  color: var(--text);
+}
+
+/* ── Main Layout ─────────────────────────────────────────── */
+main {
+  display: grid;
+  grid-template-columns: 270px 1fr;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────── */
+aside {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 14px 16px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+
+.sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pas-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1px solid;
+  margin-bottom: 6px;
+  align-self: flex-start;
+}
+.pas-badge.scene   { color: #d29922; border-color: #2d1f00; background: #1c1500; }
+.pas-badge.primary { color: #e07330; border-color: #3d1a00; background: #201000; }
+.pas-badge.done    { color: var(--green); border-color: var(--green-dim); background: #071510; }
+
+.state-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+}
+
+.field-icon { font-size: 0.9rem; flex-shrink: 0; line-height: 1.5; }
+
+.field-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+.field-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.field-value {
+  font-size: 0.82rem;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.field-value.critical { color: var(--red); font-weight: 600; }
+.field-value.warning  { color: var(--amber); }
+.field-value.ok       { color: var(--green); }
+
+.problems-section {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.problems-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--amber);
+  padding: 2px 0 4px;
+}
+
+.problem-chip {
+  font-size: 0.78rem;
+  padding: 4px 9px;
+  border-radius: 4px;
+  background: var(--amber-dim);
+  color: var(--amber);
+  border: 1px solid #4a3200;
+  word-break: break-word;
+}
+
+.empty-state {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  padding: 8px 2px;
+}
+
+/* ── Chat Section ────────────────────────────────────────── */
+.chat-section {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── Messages ────────────────────────────────────────────── */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scroll-behavior: smooth;
+}
+
+.messages::-webkit-scrollbar { width: 5px; }
+.messages::-webkit-scrollbar-track { background: transparent; }
+.messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.message {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  max-width: 820px;
+}
+
+.message.user {
+  flex-direction: row-reverse;
+  align-self: flex-end;
+}
+
+.msg-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.message.assistant .msg-avatar {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid var(--green-glow);
+}
+
+.message.user .msg-avatar {
+  background: var(--surface-2);
+  color: var(--text-soft);
+  border: 1px solid var(--border);
+}
+
+.msg-bubble {
+  padding: 11px 15px;
+  border-radius: var(--radius);
+  border: 1px solid;
+  font-size: 0.88rem;
+  line-height: 1.65;
+  max-width: min(640px, 100%);
+  word-break: break-word;
+}
+
+.message.user .msg-bubble {
+  background: var(--user-bg);
+  border-color: var(--user-border);
+  border-radius: var(--radius) 4px var(--radius) var(--radius);
+}
+
+.message.assistant .msg-bubble {
+  background: var(--asst-bg);
+  border-color: var(--asst-border);
+  border-radius: 4px var(--radius) var(--radius) var(--radius);
+}
+
+.msg-bubble p { margin-bottom: 0.4em; }
+.msg-bubble p:last-child { margin-bottom: 0; }
+.msg-bubble ul, .msg-bubble ol { padding-left: 1.4em; margin: 0.3em 0; }
+.msg-bubble li { margin-bottom: 0.2em; }
+.msg-bubble strong { font-weight: 600; color: var(--text); }
+.msg-bubble em { color: var(--text-soft); }
+.msg-bubble code {
+  font-family: 'SF Mono', Consolas, monospace;
+  font-size: 0.82em;
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.cursor {
+  display: inline-block;
+  width: 2px; height: 1em;
+  background: var(--green);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+.error-bubble {
+  font-size: 0.82rem;
+  color: var(--red);
+  background: var(--red-dim);
+  border: 1px solid #5a1010;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  align-self: center;
+}
+
+/* ── Input Bar ───────────────────────────────────────────── */
+.input-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 12px 18px 14px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.chat-input {
+  flex: 1;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  padding: 9px 13px;
+  resize: none;
+  min-height: 40px;
+  max-height: 140px;
+  outline: none;
+  transition: border-color var(--transition);
+  overflow-y: auto;
+}
+
+.chat-input:focus { border-color: var(--green-glow); }
+.chat-input::placeholder { color: var(--text-dim); }
+
+.chat-input::-webkit-scrollbar { width: 4px; }
+.chat-input::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Mic Button ──────────────────────────────────────────── */
+.mic-btn {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-soft);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition);
+  position: relative;
+}
+
+.mic-btn:hover:not(:disabled) {
+  border-color: var(--text-soft);
+  color: var(--text);
+}
+
+.mic-btn.recording {
+  background: var(--red-dim);
+  border-color: var(--red);
+  color: var(--red);
+  box-shadow: 0 0 0 0 rgba(248,81,73,0.4);
+  animation: pulse-ring 1.4s ease-out infinite;
+}
+
+.mic-btn.processing {
+  background: var(--amber-dim);
+  border-color: var(--amber);
+  color: var(--amber);
+  cursor: default;
+}
+
+.mic-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0    rgba(248,81,73,0.5); }
+  70%  { box-shadow: 0 0 0 10px rgba(248,81,73,0); }
+  100% { box-shadow: 0 0 0 0    rgba(248,81,73,0); }
+}
+
+/* Recording timer badge */
+.rec-timer {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--red);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.mic-btn.recording .rec-timer { opacity: 1; }
+
+/* ── Send Button ─────────────────────────────────────────── */
+.send-btn {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--green-glow);
+  background: var(--green-dim);
+  color: var(--green);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--transition), box-shadow var(--transition);
+}
+.send-btn:hover:not(:disabled) {
+  background: var(--green-glow);
+  color: #fff;
+  box-shadow: 0 0 8px rgba(35,134,54,0.4);
+}
+.send-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.send-btn .spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(63,185,80,0.3);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 720px) {
+  main { grid-template-columns: 1fr; }
+  aside { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────── -->
+<header>
+  <div class="logo">
+    <span class="logo-icon">🏔</span>
+    Wilderness Med Chat
+  </div>
+  <div class="header-right">
+    <div class="status-pill">
+      <div id="status-dot" class="status-dot"></div>
+      <span id="status-text">Connecting…</span>
+      <span id="rag-warn" class="rag-warning" title="No knowledge base found. Answers use model knowledge only.">· No KB</span>
+    </div>
+    <button class="reset-btn" id="reset-btn" title="Clear session and start a new patient assessment">
+      ↺ New Patient
+    </button>
+  </div>
+</header>
+
+<!-- ── Main Layout ──────────────────────────────────────────── -->
+<main>
+
+  <!-- Sidebar: Patient Assessment State -->
+  <aside>
+    <div class="sidebar-header">Assessment</div>
+    <div class="sidebar-body" id="sidebar-body">
+      <div class="pas-badge scene" id="pas-badge">◎ Scene Size-up</div>
+      <p class="empty-state" id="empty-state">
+        No patient data yet.<br>
+        Describe the situation to begin.
+      </p>
+      <div id="state-fields"></div>
+      <div id="problems-section" class="problems-section" style="display:none">
+        <span class="problems-title">⚠ Active Concerns</span>
+        <div id="problem-chips"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Chat Area -->
+  <section class="chat-section">
+    <div class="messages" id="messages">
+      <div class="message assistant">
+        <div class="msg-avatar">+</div>
+        <div class="msg-bubble">
+          <p><strong>Wilderness Med Chat ready.</strong></p>
+          <p>Describe the patient and situation to begin the assessment. You can type or use the mic button to speak.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Bar -->
+    <div class="input-bar">
+      <button class="mic-btn" id="mic-btn" title="Click to record voice">
+        <span class="rec-timer" id="rec-timer">0.0s</span>
+        <!-- Mic icon (idle) -->
+        <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+        <!-- Stop icon (recording) -->
+        <svg id="stop-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+             fill="currentColor" style="display:none">
+          <rect x="4" y="4" width="16" height="16" rx="2"/>
+        </svg>
+        <!-- Spinner (processing) -->
+        <div id="mic-spinner" class="spinner" style="display:none"></div>
+      </button>
+
+      <textarea
+        id="chat-input"
+        class="chat-input"
+        placeholder="Describe the patient or situation…"
+        rows="1"
+        autocomplete="off"
+        spellcheck="true"
+      ></textarea>
+
+      <button class="send-btn" id="send-btn" title="Send message">
+        <svg id="send-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+        <div id="send-spinner" class="spinner" style="display:none"></div>
+      </button>
+    </div>
+  </section>
+
+</main>
+
+<script>
+/* ─────────────────────────────────────────────────────────────
+   State
+───────────────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id)
+let isSending   = false
+let isRecording = false
+let mediaRecorder = null
+let audioChunks  = []
+let recTimerInterval = null
+let recStartTime = 0
+let voiceAvailable = null  // null = untested, true/false after first attempt
+
+/* ─────────────────────────────────────────────────────────────
+   Health
+───────────────────────────────────────────────────────────── */
+async function checkHealth() {
+  try {
+    const res = await fetch('/health')
+    const data = await res.json()
+    const dot  = $('status-dot')
+    const txt  = $('status-text')
+    const warn = $('rag-warn')
+    if (data.ollama) {
+      dot.className = 'status-dot online'
+      txt.textContent = 'Ready'
+    } else {
+      dot.className = 'status-dot error'
+      txt.textContent = 'Ollama offline'
+    }
+    warn.classList.toggle('visible', data.ollama && !data.rag)
+  } catch {
+    $('status-dot').className = 'status-dot error'
+    $('status-text').textContent = 'Server offline'
+  }
+}
+
+checkHealth()
+setInterval(checkHealth, 15000)
+
+/* ─────────────────────────────────────────────────────────────
+   Patient State Sidebar
+───────────────────────────────────────────────────────────── */
+const FIELD_DEFS = [
+  { key: 'mental_status',    icon: '🧠', label: 'Mental Status',
+    critical: ['unresponsive'], warning: ['altered or confused', 'responds to pain'] },
+  { key: 'airway',           icon: '🫁', label: 'Airway',
+    critical: ['threatened'], ok: ['clear'] },
+  { key: 'breathing',        icon: '💨', label: 'Breathing',
+    critical: ['absent'], ok: ['present'] },
+  { key: 'major_bleeding',   icon: '🩸', label: 'Major Bleeding',
+    critical: ['present'], ok: ['absent'] },
+  { key: 'spine_concern',    icon: '🦴', label: 'Spine Concern',
+    critical: ['yes'], warning: ['possible'] },
+  { key: 'chief_complaint',  icon: '🤕', label: 'Chief Complaint', critical: [] },
+  { key: 'mechanism',        icon: '⚡', label: 'Mechanism',       critical: [] },
+  { key: 'nature_of_illness',icon: '🦠', label: 'Nature of Illness',critical: [] },
+]
+
+function getValueClass(def, val) {
+  if (!val) return ''
+  const v = val.toLowerCase()
+  if (def.critical && def.critical.some(c => v.includes(c))) return 'critical'
+  if (def.warning  && def.warning .some(c => v.includes(c))) return 'warning'
+  if (def.ok       && def.ok      .some(c => v.includes(c))) return 'ok'
+  return ''
+}
+
+function renderPatientState(state) {
+  const badge = $('pas-badge')
+  const step  = (state.current_pas_step || 'scene size up').toLowerCase()
+  if (step.includes('primary')) {
+    badge.className = 'pas-badge primary'
+    badge.textContent = '⚠ Primary Survey'
+  } else if (step.includes('sample') || step.includes('history') || step.includes('vital')) {
+    badge.className = 'pas-badge done'
+    badge.textContent = '✓ ' + capitalize(step)
+  } else {
+    badge.className = 'pas-badge scene'
+    badge.textContent = '◎ Scene Size-up'
+  }
+
+  const fieldsEl = $('state-fields')
+  const known = FIELD_DEFS.filter(d => state[d.key])
+
+  $('empty-state').style.display = known.length === 0 ? 'block' : 'none'
+
+  fieldsEl.innerHTML = known.map(def => {
+    const val = state[def.key]
+    const cls = getValueClass(def, val)
+    return `<div class="state-field">
+      <span class="field-icon">${def.icon}</span>
+      <div class="field-text">
+        <span class="field-label">${def.label}</span>
+        <span class="field-value ${cls}">${esc(val)}</span>
+      </div>
+    </div>`
+  }).join('')
+
+  const problems = state.active_problem_list || []
+  const probSection = $('problems-section')
+  if (problems.length > 0) {
+    probSection.style.display = 'flex'
+    $('problem-chips').innerHTML = problems.map(p => `<div class="problem-chip">${esc(p)}</div>`).join('')
+  } else {
+    probSection.style.display = 'none'
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Chat + Streaming
+───────────────────────────────────────────────────────────── */
+function appendMessage(role, html, raw) {
+  const container = $('messages')
+  const div = document.createElement('div')
+  div.className = `message ${role}`
+
+  const avatar = document.createElement('div')
+  avatar.className = 'msg-avatar'
+  avatar.textContent = role === 'user' ? 'You' : '+'
+
+  const bubble = document.createElement('div')
+  bubble.className = 'msg-bubble'
+  if (html !== undefined) bubble.innerHTML = html
+
+  div.appendChild(avatar)
+  div.appendChild(bubble)
+  container.appendChild(div)
+  scrollToBottom()
+  return bubble
+}
+
+function appendError(text) {
+  const container = $('messages')
+  const div = document.createElement('div')
+  div.className = 'error-bubble'
+  div.textContent = text
+  container.appendChild(div)
+  scrollToBottom()
+}
+
+function scrollToBottom() {
+  const c = $('messages')
+  c.scrollTop = c.scrollHeight
+}
+
+async function sendMessage(text) {
+  if (!text.trim() || isSending) return
+  isSending = true
+  setSendingState(true)
+
+  // User bubble
+  appendMessage('user', `<p>${esc(text)}</p>`)
+
+  // Assistant bubble with cursor
+  const asstBubble = appendMessage('assistant', '<span class="cursor"></span>')
+  let accumulated = ''
+
+  try {
+    const resp = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text }),
+    })
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: resp.statusText }))
+      asstBubble.innerHTML = `<span style="color:var(--red)">${esc(err.error || 'Request failed')}</span>`
+      return
+    }
+
+    const reader = resp.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop()  // keep incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        let event
+        try { event = JSON.parse(line.slice(6)) } catch { continue }
+
+        if (event.type === 'token') {
+          accumulated += event.content
+          asstBubble.innerHTML = esc(accumulated) + '<span class="cursor"></span>'
+          scrollToBottom()
+
+        } else if (event.type === 'done') {
+          asstBubble.innerHTML = renderMarkdown(accumulated)
+          if (event.patient_state) renderPatientState(event.patient_state)
+          scrollToBottom()
+
+        } else if (event.type === 'error') {
+          asstBubble.innerHTML = `<span style="color:var(--red)">Error: ${esc(event.message)}</span>`
+        }
+      }
+    }
+
+    // Flush remaining buffer
+    if (buffer.startsWith('data: ')) {
+      try {
+        const event = JSON.parse(buffer.slice(6))
+        if (event.type === 'done') {
+          asstBubble.innerHTML = renderMarkdown(accumulated)
+          if (event.patient_state) renderPatientState(event.patient_state)
+        }
+      } catch { /* ignore */ }
+    }
+
+    // Ensure cursor is gone
+    if (asstBubble.innerHTML.includes('class="cursor"')) {
+      asstBubble.innerHTML = renderMarkdown(accumulated)
+    }
+
+  } catch (err) {
+    asstBubble.innerHTML = `<span style="color:var(--red)">Connection error: ${esc(err.message)}</span>`
+  } finally {
+    isSending = false
+    setSendingState(false)
+    $('chat-input').focus()
+  }
+}
+
+function setSendingState(sending) {
+  const btn   = $('send-btn')
+  const input = $('chat-input')
+  btn.disabled   = sending
+  input.disabled = sending
+  $('send-icon').style.display    = sending ? 'none' : ''
+  $('send-spinner').style.display = sending ? '' : 'none'
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Voice Recording
+───────────────────────────────────────────────────────────── */
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    audioChunks = []
+    mediaRecorder = new MediaRecorder(stream)
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data) }
+    mediaRecorder.onstop = handleRecordingStop
+    mediaRecorder.start(100)
+    isRecording = true
+
+    // Update UI
+    const btn = $('mic-btn')
+    btn.classList.add('recording')
+    $('mic-icon').style.display  = 'none'
+    $('stop-icon').style.display = ''
+
+    // Timer
+    recStartTime = Date.now()
+    recTimerInterval = setInterval(() => {
+      const secs = ((Date.now() - recStartTime) / 1000).toFixed(1)
+      $('rec-timer').textContent = secs + 's'
+      // Auto-stop at 30s
+      if (parseFloat(secs) >= 30) stopRecording()
+    }, 100)
+
+  } catch (err) {
+    voiceAvailable = false
+    appendError('Microphone access denied or unavailable. Please use text input.')
+  }
+}
+
+function stopRecording() {
+  if (!mediaRecorder || mediaRecorder.state === 'inactive') return
+  mediaRecorder.stop()
+  mediaRecorder.stream.getTracks().forEach(t => t.stop())
+  clearInterval(recTimerInterval)
+  isRecording = false
+
+  const btn = $('mic-btn')
+  btn.classList.remove('recording')
+  btn.classList.add('processing')
+  $('stop-icon').style.display   = 'none'
+  $('mic-spinner').style.display = ''
+  $('mic-icon').style.display    = 'none'
+}
+
+async function handleRecordingStop() {
+  const blob = new Blob(audioChunks, { type: audioChunks[0]?.type || 'audio/webm' })
+
+  try {
+    // Decode and resample to 16 kHz mono float32 for Whisper
+    const arrayBuffer = await blob.arrayBuffer()
+    const audioCtx  = new AudioContext()
+    const decoded   = await audioCtx.decodeAudioData(arrayBuffer)
+    await audioCtx.close()
+
+    const targetRate  = 16000
+    const duration    = decoded.duration
+    const frameCount  = Math.ceil(duration * targetRate)
+    const offlineCtx  = new OfflineAudioContext(1, frameCount, targetRate)
+    const source      = offlineCtx.createBufferSource()
+    source.buffer     = decoded
+    source.connect(offlineCtx.destination)
+    source.start(0)
+    const resampled   = await offlineCtx.startRendering()
+    const pcm         = resampled.getChannelData(0)  // Float32Array, 16 kHz mono
+
+    // Send to backend
+    const resp = await fetch('/transcribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: pcm.buffer,
+    })
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}))
+      throw new Error(err.error || `HTTP ${resp.status}`)
+    }
+
+    const { text, error } = await resp.json()
+
+    if (error) throw new Error(error)
+
+    if (text && text.trim()) {
+      voiceAvailable = true
+      // Auto-send the transcription
+      await sendMessage(text.trim())
+    } else {
+      appendError("Didn't catch anything — try speaking more clearly or use text.")
+    }
+
+  } catch (err) {
+    appendError(`Voice transcription error: ${err.message}`)
+  } finally {
+    // Reset mic button
+    const btn = $('mic-btn')
+    btn.classList.remove('processing')
+    $('mic-spinner').style.display = 'none'
+    $('mic-icon').style.display    = ''
+    $('rec-timer').textContent     = '0.0s'
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Reset
+───────────────────────────────────────────────────────────── */
+async function resetSession() {
+  await fetch('/reset', { method: 'POST' })
+
+  // Clear messages
+  const messages = $('messages')
+  messages.innerHTML = `
+    <div class="message assistant">
+      <div class="msg-avatar">+</div>
+      <div class="msg-bubble">
+        <p><strong>New patient assessment started.</strong></p>
+        <p>Describe the patient and situation to begin.</p>
+      </div>
+    </div>`
+
+  // Reset sidebar
+  $('state-fields').innerHTML = ''
+  $('problems-section').style.display = 'none'
+  $('empty-state').style.display = 'block'
+  $('pas-badge').className = 'pas-badge scene'
+  $('pas-badge').textContent = '◎ Scene Size-up'
+
+  $('chat-input').focus()
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Markdown Renderer (minimal, no external deps)
+───────────────────────────────────────────────────────────── */
+function renderMarkdown(text) {
+  const lines = text.split('\n')
+  const out = []
+  let listType = null
+
+  function closeList() {
+    if (listType) { out.push(`</${listType}>`); listType = null }
+  }
+
+  function inlineFmt(s) {
+    return s
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g,'<em>$1</em>')
+      .replace(/`([^`]+)`/g,'<code>$1</code>')
+  }
+
+  for (const line of lines) {
+    const ul = line.match(/^[-*•]\s+(.+)/)
+    const ol = line.match(/^\d+[.)]\s+(.+)/)
+    const h3 = line.match(/^###\s+(.+)/)
+    const h2 = line.match(/^##\s+(.+)/)
+    const hr = line.match(/^---+$/)
+
+    if (ul) {
+      if (listType !== 'ul') { closeList(); out.push('<ul>'); listType = 'ul' }
+      out.push(`<li>${inlineFmt(ul[1])}</li>`)
+    } else if (ol) {
+      if (listType !== 'ol') { closeList(); out.push('<ol>'); listType = 'ol' }
+      out.push(`<li>${inlineFmt(ol[1])}</li>`)
+    } else if (h3) {
+      closeList()
+      out.push(`<p><strong>${inlineFmt(h3[1])}</strong></p>`)
+    } else if (h2) {
+      closeList()
+      out.push(`<p><strong>${inlineFmt(h2[1])}</strong></p>`)
+    } else if (hr) {
+      closeList()
+      out.push('<hr style="border:none;border-top:1px solid var(--border);margin:6px 0">')
+    } else if (!line.trim()) {
+      closeList()
+    } else {
+      closeList()
+      out.push(`<p>${inlineFmt(line)}</p>`)
+    }
+  }
+  closeList()
+  return out.join('')
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Utilities
+───────────────────────────────────────────────────────────── */
+function esc(s) {
+  if (!s) return ''
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+}
+
+function capitalize(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+/* Auto-resize textarea */
+function autoResize(el) {
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px'
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Event Listeners
+───────────────────────────────────────────────────────────── */
+const input = $('chat-input')
+
+input.addEventListener('input', () => autoResize(input))
+
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    const text = input.value.trim()
+    if (!text) return
+    input.value = ''
+    autoResize(input)
+    sendMessage(text)
+  }
+})
+
+$('send-btn').addEventListener('click', () => {
+  const text = input.value.trim()
+  if (!text) return
+  input.value = ''
+  autoResize(input)
+  sendMessage(text)
+})
+
+$('mic-btn').addEventListener('click', () => {
+  if (isSending) return
+  if (isRecording) {
+    stopRecording()
+  } else {
+    startRecording()
+  }
+})
+
+$('reset-btn').addEventListener('click', () => {
+  if (confirm('Start a new patient assessment? This will clear the current conversation.')) {
+    resetSession()
+  }
+})
+
+// Initial focus
+input.focus()
+
+// Load initial patient state
+fetch('/patient-state').then(r => r.json()).then(renderPatientState).catch(() => {})
+</script>
+</body>
+</html>
