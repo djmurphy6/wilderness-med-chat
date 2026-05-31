@@ -5,7 +5,7 @@
 A voice-driven wilderness medicine assistant designed to run fully offline on an edge computing device. The primary user is someone in the backcountry — injured, stressed, potentially alone — who needs fast, reliable, evidence-based first aid and wilderness medicine guidance without any internet connection.
 
 - **Development platform**: Apple M1 Pro MacBook
-- **Deployment target**: NVIDIA Jetson Nano (4GB, ARM64 + 128-core Maxwell GPU, CUDA)
+- **Deployment target**: NVIDIA Jetson Nano or Raspberry Pi (4GB class edge devices, ARM64)
 
 ---
 
@@ -127,8 +127,8 @@ wilderness_med_chat/
 ├── requirements.txt
 ├── pytest.ini
 ├── Makefile
-├── main_text.py                # Phase 1: text CLI loop (WORKING)
-├── main.py                     # Phase 3: full voice loop (TODO)
+├── main_text.py                # Text-only CLI loop
+├── main.py                     # Voice-first CLI loop (Enter -> mic STT -> LLM -> TTS)
 ├── data/
 │   ├── pdfs/                   # Source wilderness medicine PDFs
 │   └── chroma/                 # ChromaDB vector index (2,487 chunks)
@@ -141,9 +141,9 @@ wilderness_med_chat/
 ├── rag/
 │   └── query.py                # ChromaDB retrieval, lazy-loaded singleton
 ├── tts/
-│   └── speak.py                # Kokoro-82M ONNX TTS (TODO)
+│   └── speak.py                # TTS backend selection (macOS say now, Kokoro path scaffolded)
 ├── stt/
-│   └── transcribe.py           # faster-whisper STT (TODO)
+│   └── transcribe.py           # faster-whisper STT helpers (record + transcribe)
 └── tests/
     ├── conftest.py              # Shared fixtures, ollama_available() guard
     ├── unit/
@@ -172,13 +172,13 @@ wilderness_med_chat/
 - `main_text.py` — streaming CLI loop, 10-turn history window, `new`/`reset` command
 - Full test suite: 12 unit (ollama_client) + 7 unit (patient_state) + integration + scenario + RAGAS eval infrastructure
 
-### Phase 2 — Voice out ⬜ NEXT
-- Kokoro-82M ONNX TTS (`tts/speak.py`)
-- `main_tts.py` — text in, spoken response out
+### Phase 2 — Voice out ✅ DONE
+- Runtime speaks assistant responses via local TTS backend (`tts/speak.py`)
+- Current default backend: macOS `say`; Kokoro runtime wiring remains a follow-up
 
-### Phase 3 — Full voice loop ⬜
-- faster-whisper STT (`stt/transcribe.py`)
-- `main.py` — mic → STT → RAG → LLM → TTS → speaker
+### Phase 3 — Full voice loop ✅ DONE
+- faster-whisper STT (`stt/transcribe.py`) for short microphone capture + transcription
+- `main.py` — voice-first loop with typed fallback, RAG retrieval, LLM streaming, and TTS playback
 
 ### Phase 4 — Edge deployment ⬜
 - Test on Jetson Nano
@@ -196,7 +196,8 @@ make test-scenarios     # PAS behavioral evals (5 patient scenarios)
 make eval-generate      # generate eval_dataset.jsonl via Gemini (needs GOOGLE_API_KEY)
 make eval               # RAGAS faithfulness + context precision
 make ingest             # re-ingest PDFs into ChromaDB
-make run                # launch text chat loop
+make run                # launch voice-first loop
+make run-text           # launch text-only loop
 ```
 
 ---

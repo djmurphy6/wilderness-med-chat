@@ -1,7 +1,7 @@
 VENV = .venv/bin/python
 PYTEST = .venv/bin/pytest
 
-.PHONY: test test-unit test-integration test-scenarios eval-generate eval ingest run help
+.PHONY: test test-unit test-integration test-scenarios eval-generate eval ingest run run-text help
 
 ## Run only fast unit tests (no Ollama needed)
 test-unit:
@@ -33,8 +33,12 @@ eval:
 ingest:
 	$(VENV) -m ingest.ingest
 
-## Launch text chat loop
+## Launch voice-first chat loop (Enter to speak, type for fallback)
 run:
+	$(VENV) main.py
+
+## Launch text-only chat loop
+run-text:
 	$(VENV) main_text.py
 
 ## Show this help

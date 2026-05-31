@@ -1,10 +1,22 @@
 # Wilderness Med Chat
 
+**Tagline:** *Your level-headed assistant in the backcountry.*
+
 An offline, voice-first wilderness medicine assistant for the backcountry. It guides rescuers through the **Patient Assessment System (PAS)** using RAG-grounded answers from authoritative wilderness medicine texts — with zero internet required at runtime.
 
-Built for edge deployment on **NVIDIA Jetson Nano**; developed on Apple Silicon Mac.
+Built for edge deployment on **NVIDIA Jetson Nano** or **Raspberry Pi**; developed on Apple Silicon Mac.
 
 > **Disclaimer:** This is an educational aid, not a substitute for professional medical care or certified wilderness medicine training. When in doubt, evacuate.
+
+### Hackathon pitch
+
+**Short description (submission form):**
+
+Wilderness Med Chat is a fully offline emergency medicine assistant built on Gemma 3 4B, designed to run on small edge devices like the NVIDIA Jetson Nano or Raspberry Pi — no cell service required. Using retrieval-augmented generation over wilderness medicine textbooks, it walks rescuers through the Patient Assessment System step by step when someone is injured in the backcountry. Voice-first and built for high-stress situations, it stays level-headed so you can focus on the patient.
+
+**One-liner:**
+
+Offline RAG-powered wilderness medicine assistant on Gemma 3 — PAS-guided, voice-first, runs on Jetson Nano or Raspberry Pi with zero internet at runtime.
 
 ---
 
@@ -14,7 +26,7 @@ Built for edge deployment on **NVIDIA Jetson Nano**; developed on Apple Silicon 
 - **RAG over wilderness medicine literature** — answers grounded in ingested PDFs, not model memory alone
 - **PAS-driven workflow** — structured 7-step patient assessment (scene size-up → primary survey → SAMPLE → vitals → focused exam → problem list → monitoring)
 - **Structured patient memory** — `PatientState` tracks MOI, AVPU, airway, breathing, bleeding, and more across turns
-- **Voice-first design** — hands-free operation for stressed rescuers (text CLI available today for dev/testing)
+- **Voice-first CLI** — press Enter to record, auto-transcribe, and hear spoken responses
 
 ---
 
@@ -100,7 +112,18 @@ make ingest
 make run
 ```
 
-Type wilderness medicine questions at the prompt. Commands:
+`make run` launches the voice loop:
+- Press **Enter** to record a short microphone clip (STT)
+- Or type directly for text fallback
+- Assistant replies in text and attempts local TTS playback
+
+Text-only mode is still available:
+
+```bash
+make run-text
+```
+
+Commands:
 
 - `new` or `reset` — start a fresh patient assessment
 - `exit` — quit
@@ -113,13 +136,14 @@ Type wilderness medicine questions at the prompt. Commands:
 
 ```
 wilderness_med_chat/
-├── main_text.py          # Text CLI (working)
+├── main.py               # Voice-first CLI (mic -> STT -> RAG -> LLM -> TTS)
+├── main_text.py          # Text-only CLI fallback
 ├── llm/                  # Ollama client, PAS system prompt
 ├── patient/              # PatientState — structured memory across turns
 ├── rag/                  # ChromaDB retrieval
 ├── ingest/               # PDF → chunks → embeddings → ChromaDB
-├── stt/                  # faster-whisper STT (planned)
-├── tts/                  # Kokoro ONNX TTS (planned)
+├── stt/                  # faster-whisper STT helpers
+├── tts/                  # TTS backend selection + playback helpers
 ├── data/
 │   ├── pdfs/             # Source PDFs
 │   └── chroma/           # Vector index
@@ -133,7 +157,8 @@ wilderness_med_chat/
 ### Make Commands
 
 ```bash
-make run                # Launch text chat loop
+make run                # Launch voice-first chat loop
+make run-text           # Launch text-only chat loop
 make ingest             # Re-ingest PDFs into ChromaDB
 make test-unit          # Fast unit tests (no Ollama needed)
 make test-integration   # Live RAG + LLM tests
@@ -162,8 +187,8 @@ make eval
 | Phase | Status | Description |
 |-------|--------|-------------|
 | 1 — Core | ✅ Done | Text CLI, RAG, PAS prompts, PatientState, test suite |
-| 2 — Voice out | 🔜 Next | Kokoro TTS — text in, spoken response out |
-| 3 — Full voice | ⬜ Planned | faster-whisper STT + full mic → speaker loop |
+| 2 — Voice out | ✅ Done | Spoken assistant output in the runtime loop |
+| 3 — Full voice | ✅ Done | STT + voice-first loop with typed fallback |
 | 4 — Edge deploy | ⬜ Planned | Jetson Nano deployment, systemd service |
 
 ---
