@@ -5,7 +5,8 @@ Usage:
     python main.py
 
 Flow:
-    Enter -> record microphone -> transcribe -> RAG + LLM -> spoken response
+    Press Enter -> mic opens -> speak -> silence auto-detected -> transcribe
+    -> RAG + LLM -> spoken response -> repeat
 """
 
 from __future__ import annotations
@@ -23,7 +24,6 @@ from tts.speak import Speaker, select_tts_backend
 
 
 MAX_HISTORY_MESSAGES = 20
-RECORD_SECONDS = 6.0
 
 console = Console()
 
@@ -32,7 +32,8 @@ def print_banner() -> None:
     console.print(
         Panel(
             "[bold green]Wilderness Med Chat — Voice[/bold green]\n"
-            "[dim]Press Enter to speak (6s recording). You can also type text.[/dim]\n\n"
+            "[dim]Press Enter to start speaking. Stops automatically when you pause.\n"
+            "You can also type text directly.[/dim]\n\n"
             "[dim]Commands: [bold]new[/bold] / [bold]reset[/bold] / [bold]exit[/bold][/dim]",
             border_style="green",
         )
@@ -70,11 +71,14 @@ def collect_user_input(transcriber: WhisperTranscriber | None) -> str:
         console.print("[yellow]Microphone mode unavailable; type your message instead.[/yellow]")
         return ""
 
-    console.print(f"[dim]Listening for {RECORD_SECONDS:.0f} seconds...[/dim]")
+    console.print("[dim]● Listening — speak now, pausing will stop the recording...[/dim]")
     try:
-        transcript = transcriber.record_and_transcribe(seconds=RECORD_SECONDS)
+        transcript = transcriber.listen_and_transcribe()
+    except STTUnavailableError as err:
+        console.print(f"[bold red]Mic error:[/bold red] {err}")
+        return ""
     except Exception as err:
-        console.print(f"[bold red]Microphone/STT error:[/bold red] {err}")
+        console.print(f"[bold red]STT error:[/bold red] {err}")
         return ""
 
     if not transcript:
